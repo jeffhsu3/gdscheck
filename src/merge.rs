@@ -2464,6 +2464,7 @@ fn compose_edge_tile(
                             false,
                             true,
                             0,
+                            None,
                         )
                     })
                     .map(|(x1, y1, x2, y2, _)| Edge {
