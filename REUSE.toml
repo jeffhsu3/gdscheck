@@ -72,3 +72,13 @@ SPDX-License-Identifier = "BSD-3-Clause"
 path = "tests/data/gt3/static/*.gds.gz"
 SPDX-FileCopyrightText = "2024 Piyush Kumar, Da Eun Shim, Azad Naeemi, or Georgia Institute of Technology"
 SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+# The GT2N 6-track standard-cell library, 13 nm nanosheets, SVT
+# (gds/gt2_6t_std_cells_w13_svt.gds), every cell placed once under one top cell
+# ALLCELLS, abutted on its placement boundary twelve to a row, rows 2 um apart; no cell
+# was touched.  Listed after the generic tests/data globs so this more specific entry
+# takes precedence over them.
+path = "tests/data/gt2n/static/*.gds.gz"
+SPDX-FileCopyrightText = "2025 azadnaeemi"
+SPDX-License-Identifier = "BSD-3-Clause"
