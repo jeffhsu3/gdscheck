@@ -63,3 +63,12 @@ SPDX-License-Identifier = "AGPL-3.0-or-later"
 path = "tests/data/asap7/static/*.gds.gz"
 SPDX-FileCopyrightText = "2022 Lawrence T. Clark, Vinay Vashishtha, or Arizona State University"
 SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+# The GT3 6-track RVT standard-cell library (gds/gt3_6t_std_cell_rvt.gds), every cell
+# placed once under one top cell ALLCELLS, abutted on its placement boundary thirteen to
+# a row, rows 2 um apart; no cell was touched.  Listed after the generic tests/data
+# globs so this more specific entry takes precedence over them.
+path = "tests/data/gt3/static/*.gds.gz"
+SPDX-FileCopyrightText = "2024 Piyush Kumar, Da Eun Shim, Azad Naeemi, or Georgia Institute of Technology"
+SPDX-License-Identifier = "BSD-3-Clause"
