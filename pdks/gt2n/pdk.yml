@@ -11,6 +11,8 @@
 # The backside stack, BV0 to BRDL, joins the buried power rail from below.  The runset
 # connects it and checks none of it, and neither does this PDK; its layers are declared
 # so the connect graph, and SDCON.2's different-net space, see the backside nets.
+# techlib/gt2_tech.lef has additional backside routing and via declarations; these
+# are not DRC checks here. See docs/source/pdks/gt2n.rst for the source audit.
 name: GT2N
 version: "0.1"
 extends: gt3
@@ -18,7 +20,7 @@ extends: gt3
 suites:
   - name: main
     path: suites/main.yml
-    description: Full DRC - every deck
+    description: All implemented checks (BV0-BRDL connectivity only)
   - name: feol
     path: suites/feol.yml
     description: Front end and middle of line, through V0 (a standard cell)
