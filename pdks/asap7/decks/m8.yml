@@ -5,7 +5,7 @@
 # M8 (DRM section 3.18).  The width grows with the line's length: a `length` of just under
 # 400, 1200 and 1800 nm binds the wall pairs running at least that far.  The spacings
 # M8.S.1-3 depend on the lengths of the two facing edges and read edge layers (see
-# `edge_layers` in pdk.yml); M8.S.4-8 on the width of the wider line, the `width` gate
+# `virtual_layers` in pdk.yml); M8.S.4-8 on the width of the wider line, the `width` gate
 # set a DBU under each bound so that it reads "at least".
 rules:
   - id: M8.W.1

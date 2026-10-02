@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# V1, the via from M1 to M2 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" is read as two
-# rules under one id: 2 nm on a pair of opposite sides, and 5 nm on one side.
+# V1, the via from M1 to M2 (DRM section 3.13).  V1.M1.EN.1's "5 & 2" requires
+# 5 nm on one side and 2 nm on its opposite side, on the same axis.
 #
 # Not checked: V1.S.3 and V1.S.4 (see V1.S.2).
 rules:
@@ -27,15 +27,10 @@ rules:
   - id: V1.M1.EN.1
     check: min_enclosure
     layers: [M1, V1]
-    value: 0.002
-    params:
-      sides: opposite
-  - id: V1.M1.EN.1
-    check: min_enclosure
-    layers: [M1, V1]
     value: 0.005
     params:
-      sides: any
+      sides: opposite
+      opposite_value: 0.002
   - id: V1.M2.EN.2
     check: min_enclosure
     layers: [M2, V1]

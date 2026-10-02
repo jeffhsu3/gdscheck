@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # M1 (DRM section 3.12).  The side, tip and tip-to-tip spacings read edge layers sorted
-# by length (see `edge_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
+# by length (see `virtual_layers` in pdk.yml); M1.S.6 is the corner-to-corner space, read on
 # the pairs that face each other nowhere under it.
 rules:
   - id: M1.W.1

@@ -33,7 +33,7 @@ nothing on ``sides: opposite``.
 
 The M1–M3, LISD, LIG and M8/M9 spacings depend on the lengths of the two facing edges
 (side to side, tip to side, tip to tip), so they read edge layers sorted by length
-(``edge_layers`` in ``pdk.yml``).
+(``virtual_layers`` in ``pdk.yml``).
 
 
 What is not checked
@@ -68,4 +68,6 @@ Tests
 
 ``tests/asap7.rs`` runs the full suite over the whole ASAP7 LVT standard-cell library,
 vendored under ``tests/data/asap7/static/`` (BSD-3-Clause). It asserts that only the
-library's own known violations are reported.
+library's own known violations are reported. Synthetic cases also check the SRAM
+SDT–ACTIVE overlap at 17 nm and V1's asymmetric 5/2 nm enclosure on the same opposite
+pair, including rotated pairs and shapes crossing tile boundaries.

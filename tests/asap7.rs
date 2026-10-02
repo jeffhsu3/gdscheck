@@ -19,6 +19,7 @@
 //! cannot see.
 
 use gdscheck::run_drc;
+use rstest::rstest;
 
 const PDK: &str = "asap7";
 const LIB: &str = "tests/data/asap7/static/asap7sc7p5t_28_L.gds.gz";
@@ -71,4 +72,125 @@ fn the_feol_and_beol_suites_split_main() {
     let both: std::collections::BTreeSet<String> = feol.union(&beol).cloned().collect();
     let missing: Vec<&String> = main.difference(&both).collect();
     assert!(missing.is_empty(), "in main, in neither half: {missing:?}");
+}
+
+/// Rectangles in nm, on ASAP7's 0.25 nm grid. Moving the same drawing across tile
+/// boundaries checks that a rule reads whole regions, including both via sides.
+fn rectangles(
+    deck: &str,
+    shapes: &[(&str, [f64; 4])],
+    origin: f64,
+    tile_um: f64,
+) -> Vec<gdscheck::Violation> {
+    use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsUnits};
+    let pdk = gdscheck::pdk::PdkConfig::for_process(PDK).unwrap();
+    let mut top = GdsStruct::new("TOP");
+    for &(name, [x0, y0, x1, y1]) in shapes {
+        let layer = pdk.layer(name).unwrap();
+        let point = |x: f64, y: f64| {
+            GdsPoint::new(
+                ((origin + x) * 4.0).round() as i32,
+                ((origin + y) * 4.0).round() as i32,
+            )
+        };
+        top.elems.push(GdsElement::GdsBoundary(GdsBoundary {
+            layer: layer.gds_layer as i16,
+            datatype: layer.gds_datatype as i16,
+            xy: vec![
+                point(x0, y0),
+                point(x1, y0),
+                point(x1, y1),
+                point(x0, y1),
+                point(x0, y0),
+            ],
+            ..Default::default()
+        }));
+    }
+    let mut lib = GdsLibrary::new("ASAP7_REGRESSION");
+    lib.units = GdsUnits(0.00025, 0.25e-9);
+    lib.structs = vec![top];
+    gdscheck::run_drc_with_options(
+        &lib,
+        PDK,
+        &[deck],
+        None,
+        "TOP",
+        false,
+        &gdscheck::RunOptions {
+            tile_um,
+            ..Default::default()
+        },
+    )
+    .unwrap()
+}
+
+#[rstest]
+#[case::one_nm(1.0, true)]
+#[case::just_under(16.75, true)]
+#[case::exact(17.0, false)]
+#[case::over(17.25, false)]
+#[case::full(27.0, false)]
+fn sram_sdt_requires_seventeen_nm_of_active_overlap(#[case] overlap: f64, #[case] bad: bool) {
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        let shapes = [
+            ("SDT", [0.0, 0.0, 24.0, 27.0]),
+            ("ACTIVE", [-10.0, 27.0 - overlap, 40.0, 54.0 - overlap]),
+            ("LISD", [-5.0, -5.0, 30.0, 60.0]),
+            ("SRAMDRC", [-20.0, -20.0, 70.0, 70.0]),
+        ];
+        let v = rectangles("sdt", &shapes, origin, tile);
+        assert_eq!(v.len(), if bad { 2 } else { 0 }, "{v:?}");
+        assert!(
+            v.iter().all(|v| v.rule_id == "SRAM.SDT.ACTIVE.OV.3"),
+            "{v:?}"
+        );
+    }
+}
+
+#[test]
+fn sram_sdt_overlap_also_checks_an_active_contained_inside_it() {
+    let v = rectangles(
+        "sdt",
+        &[
+            ("SDT", [0.0, 0.0, 24.0, 27.0]),
+            ("ACTIVE", [2.0, 2.0, 22.0, 18.75]),
+            ("LISD", [-5.0, -5.0, 30.0, 60.0]),
+            ("SRAMDRC", [-20.0, -20.0, 70.0, 70.0]),
+        ],
+        100.0,
+        20.0,
+    );
+    assert_eq!(v.len(), 2, "{v:?}");
+    assert!(v.iter().all(|v| v.rule_id == "SRAM.SDT.ACTIVE.OV.3"));
+}
+
+#[rstest]
+#[case::split_axes([5.0, 0.0, 2.0, 2.0], true)]
+#[case::small_side_under([5.0, 1.75, 0.0, 0.0], true)]
+#[case::large_side_under([4.75, 2.0, 0.0, 0.0], true)]
+#[case::both_small([2.0, 2.0, 2.0, 2.0], true)]
+#[case::left([5.0, 2.0, 0.0, 0.0], false)]
+#[case::right([2.0, 5.0, 0.0, 0.0], false)]
+#[case::bottom([0.0, 0.0, 5.0, 2.0], false)]
+#[case::top([0.0, 0.0, 2.0, 5.0], false)]
+#[case::over([5.25, 2.25, 0.0, 0.0], false)]
+fn v1_enclosure_requires_five_and_two_on_the_same_pair(
+    #[case] margins: [f64; 4],
+    #[case] bad: bool,
+) {
+    let [left, right, bottom, top] = margins;
+    for (origin, tile) in [(100.0, 20.0), (6_990.0, 7.0), (19_990.0, 20.0)] {
+        let v = rectangles(
+            "v1",
+            &[
+                ("V1", [0.0, 0.0, 18.0, 18.0]),
+                ("M1", [-left, -bottom, 18.0 + right, 18.0 + top]),
+                ("M2", [0.0, -5.0, 18.0, 23.0]),
+            ],
+            origin,
+            tile,
+        );
+        assert_eq!(v.len(), usize::from(bad), "{v:?}");
+        assert!(v.iter().all(|v| v.rule_id == "V1.M1.EN.1"), "{v:?}");
+    }
 }
