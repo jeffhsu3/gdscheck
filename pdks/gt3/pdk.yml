@@ -172,384 +172,116 @@ connectivity:
 
 virtual_layers:
   # The runset's own derived layers: the gate GCUT does not cut, which VG lands on.
-  - name: GatePoly
-    op: difference
-    mode: lazy
-    layers: [GATE, GCUT]
-  - name: GateNoDummy
-    op: difference
-    mode: lazy
-    layers: [GATE, DUMMY]
+  GatePoly: GATE not GCUT
+  GateNoDummy: GATE not DUMMY
   # "May not bend" and "must be rectangle": `not_rectangles`.
-  - name: BPRBent
-    op: not_rectangle
-    mode: lazy
-    layers: [BPR]
-  - name: GATEBent
-    op: not_rectangle
-    mode: lazy
-    layers: [GATE]
-  - name: DUMMYBent
-    op: not_rectangle
-    mode: lazy
-    layers: [DUMMY]
-  - name: GCUTBent
-    op: not_rectangle
-    mode: lazy
-    layers: [GCUT]
-  - name: VGBent
-    op: not_rectangle
-    mode: lazy
-    layers: [VG]
-  - name: SDCONBent
-    op: not_rectangle
-    mode: lazy
-    layers: [SDCON]
-  - name: VSDBent
-    op: not_rectangle
-    mode: lazy
-    layers: [VSD]
-  - name: M0Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M0]
-  - name: V0Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [V0]
-  - name: M1Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M1]
-  - name: M2Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M2]
-  - name: M3Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M3]
-  - name: M4Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M4]
-  - name: M5Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M5]
-  - name: M6Bent
-    op: not_rectangle
-    mode: lazy
-    layers: [M6]
+  BPRBent: BPR not_rectangle
+  GATEBent: GATE not_rectangle
+  DUMMYBent: DUMMY not_rectangle
+  GCUTBent: GCUT not_rectangle
+  VGBent: VG not_rectangle
+  SDCONBent: SDCON not_rectangle
+  VSDBent: VSD not_rectangle
+  M0Bent: M0 not_rectangle
+  V0Bent: V0 not_rectangle
+  M1Bent: M1 not_rectangle
+  M2Bent: M2 not_rectangle
+  M3Bent: M3 not_rectangle
+  M4Bent: M4 not_rectangle
+  M5Bent: M5 not_rectangle
+  M6Bent: M6 not_rectangle
   # `interacting(a, b, include_touch = NONE)` is `overlapping`, with ALL `interacting`;
   # `not_interacting(..., NONE)` is `not_overlapping`; `not_inside(..., ALL)` is
   # `not_inside`.
-  - name: VbprOnGcut
-    op: overlapping
-    mode: lazy
-    layers: [VBPR, GCUT]
-  - name: VbprOutsideSdcon
-    op: not_inside
-    mode: lazy
-    layers: [VBPR, SDCON]
-  - name: DummyOffGate
-    op: not_overlapping
-    mode: lazy
-    layers: [DUMMY, GATE]
-  - name: DummyOutsideGate
-    op: not_inside
-    mode: lazy
-    layers: [DUMMY, GATE]
-  - name: GcutOffGate
-    op: not_overlapping
-    mode: lazy
-    layers: [GCUT, GATE]
-  - name: GcutOnAct
-    op: interacting
-    mode: lazy
-    layers: [GCUT, ACT]
-  - name: GcutOrDummy
-    op: union
-    mode: lazy
-    layers: [GCUT, DUMMY]
-  - name: VgOnGcutDummy
-    op: interacting
-    mode: lazy
-    layers: [VG, GcutOrDummy]
-  - name: VgOffGate
-    op: not_overlapping
-    mode: lazy
-    layers: [VG, GATE]
-  - name: VgOutsideGate
-    op: not_inside
-    mode: lazy
-    layers: [VG, GATE]
-  - name: VgOutsideM0
-    op: not_inside
-    mode: lazy
-    layers: [VG, M0]
-  - name: VsdOutsideSdcon
-    op: not_inside
-    mode: lazy
-    layers: [VSD, SDCON]
-  - name: VsdOutsideM0
-    op: not_inside
-    mode: lazy
-    layers: [VSD, M0]
-  - name: V0OutsideM0
-    op: not_inside
-    mode: lazy
-    layers: [V0, M0]
-  - name: V0OutsideM1
-    op: not_inside
-    mode: lazy
-    layers: [V0, M1]
-  - name: V1OffM1
-    op: not_overlapping
-    mode: lazy
-    layers: [V1, M1]
-  - name: V1OffM2
-    op: not_overlapping
-    mode: lazy
-    layers: [V1, M2]
-  - name: V2OffM2
-    op: not_overlapping
-    mode: lazy
-    layers: [V2, M2]
-  - name: V2OffM3
-    op: not_overlapping
-    mode: lazy
-    layers: [V2, M3]
-  - name: V3OffM3
-    op: not_overlapping
-    mode: lazy
-    layers: [V3, M3]
-  - name: V3OffM4
-    op: not_overlapping
-    mode: lazy
-    layers: [V3, M4]
-  - name: V4OffM4
-    op: not_overlapping
-    mode: lazy
-    layers: [V4, M4]
-  - name: V4OffM5
-    op: not_overlapping
-    mode: lazy
-    layers: [V4, M5]
-  - name: V5OffM5
-    op: not_overlapping
-    mode: lazy
-    layers: [V5, M5]
-  - name: V5OffM6
-    op: not_overlapping
-    mode: lazy
-    layers: [V5, M6]
+  VbprOnGcut: VBPR overlapping GCUT
+  VbprOutsideSdcon: VBPR not_inside SDCON
+  DummyOffGate: DUMMY not_overlapping GATE
+  DummyOutsideGate: DUMMY not_inside GATE
+  GcutOffGate: GCUT not_overlapping GATE
+  GcutOnAct: GCUT interacting ACT
+  GcutOrDummy: GCUT or DUMMY
+  VgOnGcutDummy: VG interacting GcutOrDummy
+  VgOffGate: VG not_overlapping GATE
+  VgOutsideGate: VG not_inside GATE
+  VgOutsideM0: VG not_inside M0
+  VsdOutsideSdcon: VSD not_inside SDCON
+  VsdOutsideM0: VSD not_inside M0
+  V0OutsideM0: V0 not_inside M0
+  V0OutsideM1: V0 not_inside M1
+  V1OffM1: V1 not_overlapping M1
+  V1OffM2: V1 not_overlapping M2
+  V2OffM2: V2 not_overlapping M2
+  V2OffM3: V2 not_overlapping M3
+  V3OffM3: V3 not_overlapping M3
+  V3OffM4: V3 not_overlapping M4
+  V4OffM4: V4 not_overlapping M4
+  V4OffM5: V4 not_overlapping M5
+  V5OffM5: V5 not_overlapping M5
+  V5OffM6: V5 not_overlapping M6
 
-edge_layers:
+  # Edge layers share the virtual-layer expression mapping.
   # GCUT.7: a GCUT's vertical edge inside, or on, a gate that is not a DUMMY.
-  - name: GCUT.edges
-    op: edges
-    layers: [GCUT]
-  - name: GcutVEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [GCUT.edges]
-  - name: GateNoDummy.edges
-    op: edges
-    layers: [GateNoDummy]
-  - name: GcutVEdgesInGate
-    op: inside_part
-    layers: [GcutVEdges, GateNoDummy]
-  - name: GcutVEdgesOnGate
-    op: and
-    layers: [GcutVEdges, GateNoDummy.edges]
+  GCUT.edges: GCUT edges
+  GcutVEdges: GCUT.edges with_angle min 90.0 max 90.0
+  GateNoDummy.edges: GateNoDummy edges
+  GcutVEdgesInGate: GcutVEdges inside_part GateNoDummy
+  GcutVEdgesOnGate: GcutVEdges and GateNoDummy.edges
   # ACT.6: an active's vertical edges lie in a DUMMY.
-  - name: ACT.edges
-    op: edges
-    layers: [ACT]
-  - name: ActVEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [ACT.edges]
-  - name: ActVEdgesOffDummy
-    op: outside_part
-    layers: [ActVEdges, DUMMY]
+  ACT.edges: ACT edges
+  ActVEdges: ACT.edges with_angle min 90.0 max 90.0
+  ActVEdgesOffDummy: ActVEdges outside_part DUMMY
   # A via's vertical edges lie on the vertical-routed metal above or below it, its
   # horizontal edges on the horizontal one (`not_inside_touching_edge`): the parts outside
   # the metal and not on its outline.
-  - name: M0.edges
-    op: edges
-    layers: [M0]
-  - name: M1.edges
-    op: edges
-    layers: [M1]
-  - name: M2.edges
-    op: edges
-    layers: [M2]
-  - name: M3.edges
-    op: edges
-    layers: [M3]
-  - name: M4.edges
-    op: edges
-    layers: [M4]
-  - name: M5.edges
-    op: edges
-    layers: [M5]
-  - name: M6.edges
-    op: edges
-    layers: [M6]
-  - name: V0.edges
-    op: edges
-    layers: [V0]
-  - name: V0VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V0.edges]
-  - name: V0HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V0.edges]
-  - name: V0VEdgesOutM1
-    op: outside_part
-    layers: [V0VEdges, M1]
-  - name: V0VEdgesOffM1
-    op: not
-    layers: [V0VEdgesOutM1, M1.edges]
-  - name: V0HEdgesOutM0
-    op: outside_part
-    layers: [V0HEdges, M0]
-  - name: V0HEdgesOffM0
-    op: not
-    layers: [V0HEdgesOutM0, M0.edges]
-  - name: V1.edges
-    op: edges
-    layers: [V1]
-  - name: V1VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V1.edges]
-  - name: V1HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V1.edges]
-  - name: V1VEdgesOutM1
-    op: outside_part
-    layers: [V1VEdges, M1]
-  - name: V1VEdgesOffM1
-    op: not
-    layers: [V1VEdgesOutM1, M1.edges]
-  - name: V1HEdgesOutM2
-    op: outside_part
-    layers: [V1HEdges, M2]
-  - name: V1HEdgesOffM2
-    op: not
-    layers: [V1HEdgesOutM2, M2.edges]
-  - name: V2.edges
-    op: edges
-    layers: [V2]
-  - name: V2VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V2.edges]
-  - name: V2HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V2.edges]
-  - name: V2VEdgesOutM3
-    op: outside_part
-    layers: [V2VEdges, M3]
-  - name: V2VEdgesOffM3
-    op: not
-    layers: [V2VEdgesOutM3, M3.edges]
-  - name: V2HEdgesOutM2
-    op: outside_part
-    layers: [V2HEdges, M2]
-  - name: V2HEdgesOffM2
-    op: not
-    layers: [V2HEdgesOutM2, M2.edges]
-  - name: V3.edges
-    op: edges
-    layers: [V3]
-  - name: V3VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V3.edges]
-  - name: V3HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V3.edges]
-  - name: V3VEdgesOutM3
-    op: outside_part
-    layers: [V3VEdges, M3]
-  - name: V3VEdgesOffM3
-    op: not
-    layers: [V3VEdgesOutM3, M3.edges]
-  - name: V3HEdgesOutM4
-    op: outside_part
-    layers: [V3HEdges, M4]
-  - name: V3HEdgesOffM4
-    op: not
-    layers: [V3HEdgesOutM4, M4.edges]
-  - name: V4.edges
-    op: edges
-    layers: [V4]
-  - name: V4VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V4.edges]
-  - name: V4HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V4.edges]
-  - name: V4VEdgesOutM5
-    op: outside_part
-    layers: [V4VEdges, M5]
-  - name: V4VEdgesOffM5
-    op: not
-    layers: [V4VEdgesOutM5, M5.edges]
-  - name: V4HEdgesOutM4
-    op: outside_part
-    layers: [V4HEdges, M4]
-  - name: V4HEdgesOffM4
-    op: not
-    layers: [V4HEdgesOutM4, M4.edges]
-  - name: V5.edges
-    op: edges
-    layers: [V5]
-  - name: V5VEdges
-    op: with_angle
-    min: 90.0
-    max: 90.0
-    layers: [V5.edges]
-  - name: V5HEdges
-    op: with_angle
-    min: 0.0
-    max: 0.0
-    layers: [V5.edges]
-  - name: V5VEdgesOutM5
-    op: outside_part
-    layers: [V5VEdges, M5]
-  - name: V5VEdgesOffM5
-    op: not
-    layers: [V5VEdgesOutM5, M5.edges]
-  - name: V5HEdgesOutM6
-    op: outside_part
-    layers: [V5HEdges, M6]
-  - name: V5HEdgesOffM6
-    op: not
-    layers: [V5HEdgesOutM6, M6.edges]
+  M0.edges: M0 edges
+  M1.edges: M1 edges
+  M2.edges: M2 edges
+  M3.edges: M3 edges
+  M4.edges: M4 edges
+  M5.edges: M5 edges
+  M6.edges: M6 edges
+  V0.edges: V0 edges
+  V0VEdges: V0.edges with_angle min 90.0 max 90.0
+  V0HEdges: V0.edges with_angle min 0.0 max 0.0
+  V0VEdgesOutM1: V0VEdges outside_part M1
+  V0VEdgesOffM1: V0VEdgesOutM1 not M1.edges
+  V0HEdgesOutM0: V0HEdges outside_part M0
+  V0HEdgesOffM0: V0HEdgesOutM0 not M0.edges
+  V1.edges: V1 edges
+  V1VEdges: V1.edges with_angle min 90.0 max 90.0
+  V1HEdges: V1.edges with_angle min 0.0 max 0.0
+  V1VEdgesOutM1: V1VEdges outside_part M1
+  V1VEdgesOffM1: V1VEdgesOutM1 not M1.edges
+  V1HEdgesOutM2: V1HEdges outside_part M2
+  V1HEdgesOffM2: V1HEdgesOutM2 not M2.edges
+  V2.edges: V2 edges
+  V2VEdges: V2.edges with_angle min 90.0 max 90.0
+  V2HEdges: V2.edges with_angle min 0.0 max 0.0
+  V2VEdgesOutM3: V2VEdges outside_part M3
+  V2VEdgesOffM3: V2VEdgesOutM3 not M3.edges
+  V2HEdgesOutM2: V2HEdges outside_part M2
+  V2HEdgesOffM2: V2HEdgesOutM2 not M2.edges
+  V3.edges: V3 edges
+  V3VEdges: V3.edges with_angle min 90.0 max 90.0
+  V3HEdges: V3.edges with_angle min 0.0 max 0.0
+  V3VEdgesOutM3: V3VEdges outside_part M3
+  V3VEdgesOffM3: V3VEdgesOutM3 not M3.edges
+  V3HEdgesOutM4: V3HEdges outside_part M4
+  V3HEdgesOffM4: V3HEdgesOutM4 not M4.edges
+  V4.edges: V4 edges
+  V4VEdges: V4.edges with_angle min 90.0 max 90.0
+  V4HEdges: V4.edges with_angle min 0.0 max 0.0
+  V4VEdgesOutM5: V4VEdges outside_part M5
+  V4VEdgesOffM5: V4VEdgesOutM5 not M5.edges
+  V4HEdgesOutM4: V4HEdges outside_part M4
+  V4HEdgesOffM4: V4HEdgesOutM4 not M4.edges
+  V5.edges: V5 edges
+  V5VEdges: V5.edges with_angle min 90.0 max 90.0
+  V5HEdges: V5.edges with_angle min 0.0 max 0.0
+  V5VEdgesOutM5: V5VEdges outside_part M5
+  V5VEdgesOffM5: V5VEdgesOutM5 not M5.edges
+  V5HEdgesOutM6: V5HEdges outside_part M6
+  V5HEdgesOffM6: V5HEdgesOutM6 not M6.edges
 
 layers:
   - name: NWELL
