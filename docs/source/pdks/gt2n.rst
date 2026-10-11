@@ -103,6 +103,15 @@ library's own. ``gt2_6t_mux2_x1`` lands a V0 flush with the end of its M1, and o
 13 nm sheets ``gt2_6t_decapcc`` draws two VGs 5 nm from an active. The other nine
 libraries give the same result, apart from the 13 nm-only VG finding.
 
+Every rule in every deck also has a generated pattern, written by ``gen/gt2n`` under
+``tests/data/gt2n/generated/<deck>/`` (``just gen-testdata-for gt2n``). Each pattern
+draws the shape exactly at the runset's limit, then one 0.5 nm DBU past it, inside
+whatever else its deck reads: a VG in its gate and M0, a V0 flush with both wires.
+The generator reads its limits from ``icv_runset/Include/gt2.*.drc.rs`` and stops if a
+deck disagrees, including a deck GT2N shares with GT3. The test names the count each
+pattern reports, and any other rule the drawing must also break, such as the bend in
+a notch.
+
 That standard-cell fixture contains no BV0–BRDL geometry. Separate synthetic tests
 exercise two SDCONs joined only through the entire backside stack. Removing each
 via in turn, on either branch, must disconnect the contacts and make ``SDCON.2``
