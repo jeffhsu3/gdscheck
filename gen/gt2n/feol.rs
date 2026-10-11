@@ -493,6 +493,28 @@ fn act(c: &Corpus<'_>) {
         .collect();
     c.write("act", "ACT.2.narrow", true, elems);
 
+    // A row as the libraries draw it: a 126 nm cell, a one-pitch filler, a 126 nm cell,
+    // abutted, a DUMMY on each cell edge. The 13 nm sheets' ACT runs y 35-48, the 31 nm
+    // sheets' y 26-57. Fillers matching their neighbours merge into one bar; a 13 nm
+    // filler between 31 nm cells leaves a neck 13 nm tall, which nothing reads; a 31 nm
+    // filler between 13 nm cells stands 9 nm proud of them above and below, two pieces
+    // one pitch across, under ACT.2's 84 nm - what a w13 design filled with the example
+    // flow's gt2_6t_filler_w31 draws.
+    let (thin, thick) = ((35.0, 48.0), (26.0, 57.0));
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for (cells, filler) in [(thin, thin), (thick, thick), (thick, thin), (thin, thick)] {
+        let y = rows.next(144.0);
+        let mut x = OFFSET;
+        for (wide, (y0, y1)) in [(126.0, cells), (42.0, filler), (126.0, cells)] {
+            elems.push(bx(act, x, y + y0, wide, y1 - y0));
+            elems.push(bx(dummy, x - dw / 2.0, y, dw, 144.0));
+            x += wide;
+        }
+        elems.push(bx(dummy, x - dw / 2.0, y, dw, 144.0));
+    }
+    c.write("act", "ACT.2.sheets", true, elems);
+
     let s = c.src("ACT.3", "min_space", 30.0);
     assert_eq!(c.src("ACT.3", "min_notch", 30.0), s);
     let mut rows = Rows::new(OFFSET);

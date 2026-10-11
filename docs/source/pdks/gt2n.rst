@@ -115,6 +115,26 @@ library's own. ``gt2_6t_mux2_x1`` lands a V0 flush with the end of its M1, and o
 13 nm sheets ``gt2_6t_decapcc`` draws two VGs 5 nm from an active. The other nine
 libraries give the same result, apart from the 13 nm-only VG finding.
 
+The 13 nm and 31 nm sheets share one placement site, but not one ACT: the 13 nm cells
+draw it at y 35–48 nm and the 31 nm cells at y 26–57 nm. The filler and the backside
+tap (``tapbspdn``) are one 42 nm pitch wide and draw their ACT across the whole cell,
+so a 31 nm one between 13 nm cells stands 9 nm proud of them above and below. Each
+protruding piece is one pitch across and fails ACT.2's 84 nm, as it would upstream. A
+13 nm one-pitch cell is clean beside either sheet. The decap, two pitches wide, stands
+proud by exactly 84 nm and is clean from either sheet.
+
+A flow that mixes the sheets has to pick its one-pitch cells with this in mind.
+OpenROAD's fill insertion takes the first filler of each width listed in
+``FILL_CELLS``. ORFS's ``gt2n`` platform loads both sheets, 31 nm first; its
+``FILL_CELLS`` listed every sheet's filler and its ``TAP_CELL_NAME`` followed the
+primary sheet, so every filler and tap was a 31 nm cell. On ``gt2n/aes``, with mostly
+13 nm logic, that gave 9,480 ACT.2 markers, every one on a 31 nm filler or tap between
+13 nm cells. Taking the fillers and the tap from the 13 nm sheet whenever it is
+loaded clears them all and leaves synthesis, placement and routing unchanged. GT2N's
+own example flow names ``gt2_6t_filler_w31_lvt`` as its filler, so a 13 nm design
+built from it should set ``FILL_CELLS`` to the matching 13 nm filler. The
+``ACT.2.sheets`` pattern draws all four filler-and-neighbour pairings.
+
 Every rule in every deck also has a generated pattern, written by ``gen/gt2n`` under
 ``tests/data/gt2n/generated/<deck>/`` (``just gen-testdata-for gt2n``). Each pattern
 draws the shape exactly at the runset's limit, then one 0.5 nm DBU past it, inside
