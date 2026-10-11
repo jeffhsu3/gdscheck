@@ -491,7 +491,8 @@ fn v0(c: &Corpus<'_>) {
         .collect();
     c.write("v0", "V0.2.narrow", true, elems);
 
-    // A via jogged a DBU, in an M0 and an M1 wide enough to hold it.
+    // A via jogged a DBU, in an M0 and an M1 wide enough to hold it - and so off
+    // their outlines, which V0.7 and V0.8 read.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
     let y = rows.next(tall);
@@ -561,21 +562,31 @@ fn v0(c: &Corpus<'_>) {
         .collect();
     c.write("v0", "V0.M1.1.enc", true, elems);
 
-    // A vertical wall a DBU off M1, and a horizontal wall a DBU off M0: the via also
-    // lies outside that wire, which V0.5 and V0.4 read.
+    // An M1 a DBU to the right: one vertical wall lies outside it - the via then lies
+    // outside it too, which V0.5 reads - and the other inside it, off its outline. Then
+    // an M1 a DBU wider each side: both walls inside it, off its outline.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
     let y = rows.next(tall);
     elems.extend(ok(OFFSET, y));
     elems.pop();
     elems.push(bx(m1, OFFSET + DBU, y - run, w, h + 2.0 * run));
+    let y = rows.next(tall);
+    elems.extend(ok(OFFSET, y));
+    elems.pop();
+    elems.push(bx(m1, OFFSET - DBU, y - run, w + 2.0 * DBU, h + 2.0 * run));
     c.write("v0", "V0.7.align", true, elems);
 
+    // The same across y for M0, which V0.4 reads.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
     let y = rows.next(tall);
     elems.extend(ok(OFFSET, y));
     elems.remove(elems.len() - 2);
     elems.push(bx(m0, OFFSET - run, y + DBU, w + 2.0 * run, h));
+    let y = rows.next(tall);
+    elems.extend(ok(OFFSET, y));
+    elems.remove(elems.len() - 2);
+    elems.push(bx(m0, OFFSET - run, y - DBU, w + 2.0 * run, h + 2.0 * DBU));
     c.write("v0", "V0.8.align", true, elems);
 }

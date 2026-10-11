@@ -33,7 +33,9 @@ Translation
 
 Each deck's header lists the rules the runset names but does not check. GATE.2, an
 exact 27 nm gate space, is checked as a minimum, which is how the runset effectively
-reads it too. Upstream typos are corrected: ``BRP.1`` is ``BPR.1``, and ``V4.M3.EN``
+reads it too. A via's edges must lie on its metals' outlines, which is how
+``not_inside_touching_edge`` reads: a via inside a wider metal is off the metal's
+outline, just as a via sticking out of it is. Upstream typos are corrected: ``BRP.1`` is ``BPR.1``, and ``V4.M3.EN``
 is ``V4.M5.EN``.
 
 

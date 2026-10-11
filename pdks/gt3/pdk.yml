@@ -231,8 +231,11 @@ virtual_layers:
   ActVEdges: ACT.edges with_angle min 90.0 max 90.0
   ActVEdgesOffDummy: ActVEdges outside_part DUMMY
   # A via's vertical edges lie on the vertical-routed metal above or below it, its
-  # horizontal edges on the horizontal one (`not_inside_touching_edge`): the parts outside
-  # the metal and not on its outline.
+  # horizontal edges on the horizontal one: upstream's `not_inside_touching_edge` keeps
+  # the via edges with no inside coincidence with the metal's, so a via inside a wider
+  # metal is off it as surely as one sticking out.  These are the parts of a via's edges
+  # not on the metal's outline; a via abutting the metal from outside lies on it, and
+  # V*.4/V*.5 and V*.7/V*.8 report that via instead.
   M0.edges: M0 edges
   M1.edges: M1 edges
   M2.edges: M2 edges
@@ -243,45 +246,33 @@ virtual_layers:
   V0.edges: V0 edges
   V0VEdges: V0.edges with_angle min 90.0 max 90.0
   V0HEdges: V0.edges with_angle min 0.0 max 0.0
-  V0VEdgesOutM1: V0VEdges outside_part M1
-  V0VEdgesOffM1: V0VEdgesOutM1 not M1.edges
-  V0HEdgesOutM0: V0HEdges outside_part M0
-  V0HEdgesOffM0: V0HEdgesOutM0 not M0.edges
+  V0VEdgesOffM1: V0VEdges not M1.edges
+  V0HEdgesOffM0: V0HEdges not M0.edges
   V1.edges: V1 edges
   V1VEdges: V1.edges with_angle min 90.0 max 90.0
   V1HEdges: V1.edges with_angle min 0.0 max 0.0
-  V1VEdgesOutM1: V1VEdges outside_part M1
-  V1VEdgesOffM1: V1VEdgesOutM1 not M1.edges
-  V1HEdgesOutM2: V1HEdges outside_part M2
-  V1HEdgesOffM2: V1HEdgesOutM2 not M2.edges
+  V1VEdgesOffM1: V1VEdges not M1.edges
+  V1HEdgesOffM2: V1HEdges not M2.edges
   V2.edges: V2 edges
   V2VEdges: V2.edges with_angle min 90.0 max 90.0
   V2HEdges: V2.edges with_angle min 0.0 max 0.0
-  V2VEdgesOutM3: V2VEdges outside_part M3
-  V2VEdgesOffM3: V2VEdgesOutM3 not M3.edges
-  V2HEdgesOutM2: V2HEdges outside_part M2
-  V2HEdgesOffM2: V2HEdgesOutM2 not M2.edges
+  V2VEdgesOffM3: V2VEdges not M3.edges
+  V2HEdgesOffM2: V2HEdges not M2.edges
   V3.edges: V3 edges
   V3VEdges: V3.edges with_angle min 90.0 max 90.0
   V3HEdges: V3.edges with_angle min 0.0 max 0.0
-  V3VEdgesOutM3: V3VEdges outside_part M3
-  V3VEdgesOffM3: V3VEdgesOutM3 not M3.edges
-  V3HEdgesOutM4: V3HEdges outside_part M4
-  V3HEdgesOffM4: V3HEdgesOutM4 not M4.edges
+  V3VEdgesOffM3: V3VEdges not M3.edges
+  V3HEdgesOffM4: V3HEdges not M4.edges
   V4.edges: V4 edges
   V4VEdges: V4.edges with_angle min 90.0 max 90.0
   V4HEdges: V4.edges with_angle min 0.0 max 0.0
-  V4VEdgesOutM5: V4VEdges outside_part M5
-  V4VEdgesOffM5: V4VEdgesOutM5 not M5.edges
-  V4HEdgesOutM4: V4HEdges outside_part M4
-  V4HEdgesOffM4: V4HEdgesOutM4 not M4.edges
+  V4VEdgesOffM5: V4VEdges not M5.edges
+  V4HEdgesOffM4: V4HEdges not M4.edges
   V5.edges: V5 edges
   V5VEdges: V5.edges with_angle min 90.0 max 90.0
   V5HEdges: V5.edges with_angle min 0.0 max 0.0
-  V5VEdgesOutM5: V5VEdges outside_part M5
-  V5VEdgesOffM5: V5VEdgesOutM5 not M5.edges
-  V5HEdgesOutM6: V5HEdges outside_part M6
-  V5HEdgesOffM6: V5HEdgesOutM6 not M6.edges
+  V5VEdgesOffM5: V5VEdges not M5.edges
+  V5HEdgesOffM6: V5HEdges not M6.edges
 
 layers:
   - name: NWELL

@@ -265,20 +265,34 @@ fn via(c: &Corpus<'_>, v: &Via) {
         .collect();
     write("2", "narrow", elems);
 
-    // A via whose metal along y sits a DBU to the right: one vertical wall lies off it.
+    // A via whose metal along y sits a DBU to the right: one vertical wall lies outside
+    // it and the other inside it, both off its outline; then one whose metal is a DBU
+    // wider each side, both walls inside it.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
     let y = rows.next(tall);
     elems.extend(stack(OFFSET, y, (wx, wy), None, full));
     elems.push(bx(ly, OFFSET + DBU, y - run, wx, tall));
+    let y = rows.next(tall);
+    elems.extend(stack(OFFSET, y, (wx, wy), None, full));
+    elems.push(bx(ly, OFFSET - DBU, y - run, wx + 2.0 * DBU, tall));
     write("3", "align", elems);
 
-    // A via whose metal along x sits a DBU high: one horizontal wall lies off it.
+    // The same across y for the metal along x.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
     let y = rows.next(tall);
     elems.extend(stack(OFFSET, y, (wx, wy), full, None));
     elems.push(bx(lx, OFFSET - run, y + DBU, wx + 2.0 * run, wy));
+    let y = rows.next(tall);
+    elems.extend(stack(OFFSET, y, (wx, wy), full, None));
+    elems.push(bx(
+        lx,
+        OFFSET - run,
+        y - DBU,
+        wx + 2.0 * run,
+        wy + 2.0 * DBU,
+    ));
     write("4", "align", elems);
 
     // Two vias corner to corner, each in its own wires, run out to the enclosures.

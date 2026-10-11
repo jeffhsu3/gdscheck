@@ -363,7 +363,10 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 /// The middle of line. A contact or via jogged a DBU is a DBU off its exact height
 /// on four walls, so the bend tests ignore that rule. A VG off any gate lies inside
 /// none, which VG.5 also reads; a V0 off M0 (M1) has a horizontal (vertical) wall off
-/// it, which V0.8 (V0.7) also reads, and the other way about. SDCON.2 reads two
+/// it, which V0.8 (V0.7) also reads, and the other way about. A V0 wall must lie on
+/// its wire's outline, as upstream's `not_inside_touching_edge` reads it: a wire a DBU
+/// off the via, or a DBU wider each side, leaves two walls off it, and a jogged via
+/// lies off both wires' outlines. SDCON.2 reads two
 /// contacts on different nets: the pair joined through VSD and M0 does not count.
 #[rstest]
 #[case("vg", "VG.1", "narrow", 4)]
@@ -401,15 +404,15 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 #[case("v0", "V0.4", "outside", 2)]
 #[case("v0", "V0.5", "outside", 2)]
 #[case("v0", "V0.6", "corner", 1)]
-#[case("v0", "V0.7", "align", 1)]
-#[case("v0", "V0.8", "align", 1)]
+#[case("v0", "V0.7", "align", 4)]
+#[case("v0", "V0.8", "align", 4)]
 #[case("v0", "V0.M0.1", "enc", 2)]
 #[case("v0", "V0.M1.1", "enc", 2)]
 fn mol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
     let ignore: &[&str] = match (rule, variant) {
         ("VG.7", _) => &["VG.2"],
         ("VSD.3", _) => &["VSD.2"],
-        ("V0.3", _) => &["V0.2"],
+        ("V0.3", _) => &["V0.2", "V0.7", "V0.8"],
         ("VG.4", _) => &["VG.5"],
         ("M0.3" | "M0.4", "notch") => &["M0.1", "M0.6"],
         ("V0.4", _) => &["V0.8"],
@@ -423,7 +426,8 @@ fn mol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 
 /// The routing stack: every metal and via level drawn by one builder. A notch needs a
 /// wire that bends, which `.6` also reads. A via off its metal has a wall off it too,
-/// which `.3` (the metal along y) or `.4` (along x) also reads.
+/// which `.3` (the metal along y) or `.4` (along x) also reads. A metal a DBU off
+/// its via, or a DBU wider each side, leaves two of its walls off the outline.
 #[rstest]
 fn beol(#[values(1, 2, 3, 4, 5, 6)] n: u8) {
     let deck = format!("m{n}");
@@ -452,8 +456,8 @@ fn beol(#[values(1, 2, 3, 4, 5, 6)] n: u8) {
     for (r, variant, count, ignore) in [
         (id("1"), "narrow", 2, None),
         (id("2"), "narrow", 2, None),
-        (id("3"), "align", 1, None),
-        (id("4"), "align", 1, None),
+        (id("3"), "align", 4, None),
+        (id("4"), "align", 4, None),
         (id("6"), "corner", 1, None),
         (id("7"), "off", 2, Some(edge_rule(n))),
         (id("8"), "off", 2, Some(edge_rule(n + 1))),
