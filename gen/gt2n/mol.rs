@@ -199,6 +199,23 @@ fn vg(c: &Corpus<'_>) {
         ));
     }
     c.write("vg", "VG.ACT.1.close", true, elems);
+
+    // The same active touching the contact, a DBU into it, and under all of it: no
+    // space at all, which the spacing alone does not see.
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for top in [0.0, DBU, h] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.push(bx(
+            act,
+            OFFSET - 50.0,
+            y + tall / 2.0 + top - 20.0,
+            114.0,
+            20.0,
+        ));
+    }
+    c.write("vg", "VG.ACT.1a.overlap", true, elems);
 }
 
 fn sdcon(c: &Corpus<'_>) {

@@ -204,6 +204,9 @@ virtual_layers:
   VgOffGate: VG not_overlapping GATE
   VgOutsideGate: VG not_inside GATE
   VgOutsideM0: VG not_inside M0
+  # A VG on an active or touching it: a space of nothing, which the spacing check
+  # does not read.
+  VgOnAct: VG interacting ACT
   VsdOutsideSdcon: VSD not_inside SDCON
   VsdOutsideM0: VSD not_inside M0
   V0OutsideM0: V0 not_inside M0

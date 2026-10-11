@@ -394,6 +394,7 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 #[case("vg", "VG.M0.1", "outside", 2)]
 #[case("vg", "VG.M0.2", "enc", 2)]
 #[case("vg", "VG.ACT.1", "close", 1)]
+#[case("vg", "VG.ACT.1a", "overlap", 3)]
 #[case("sdcon", "SDCON.1", "narrow", 4)]
 #[case("sdcon", "SDCON.2", "close", 1)]
 #[case("sdcon", "SDCON.3", "bent", 1)]
