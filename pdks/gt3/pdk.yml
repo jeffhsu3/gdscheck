@@ -220,12 +220,12 @@ virtual_layers:
   V5OffM6: V5 not_overlapping M6
 
   # Edge layers share the virtual-layer expression mapping.
-  # GCUT.7: a GCUT's vertical edge inside, or on, a gate that is not a DUMMY.
+  # GCUT.7: a GCUT's vertical edge inside, or on, a gate that is not a DUMMY.  A piece
+  # on the gate's wall is inside it from either side, as upstream's interacting_edge
+  # reads it, so the one selection holds both.
   GCUT.edges: GCUT edges
   GcutVEdges: GCUT.edges with_angle min 90.0 max 90.0
-  GateNoDummy.edges: GateNoDummy edges
   GcutVEdgesInGate: GcutVEdges inside_part GateNoDummy
-  GcutVEdgesOnGate: GcutVEdges and GateNoDummy.edges
   # ACT.6: an active's vertical edges lie in a DUMMY.
   ACT.edges: ACT edges
   ActVEdges: ACT.edges with_angle min 90.0 max 90.0

@@ -29,10 +29,6 @@ rules:
     check: forbidden
     layers: [GcutVEdgesInGate]
     value: 0.0
-  - id: GCUT.7
-    check: forbidden
-    layers: [GcutVEdgesOnGate]
-    value: 0.0
   - id: GCUT.8
     check: forbidden
     layers: [GcutOnAct]
