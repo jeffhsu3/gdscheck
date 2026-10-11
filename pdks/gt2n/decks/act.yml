@@ -29,7 +29,9 @@ rules:
     value: 0.03
     params:
       facing: y
-  # An active ends inside a DUMMY: its vertical edges lie in one.
+  # An active ends inside a DUMMY: its vertical edges lie in one, every part of them.
+  # Upstream's not_interacting_edge passes an end the DUMMY covers only in part; the
+  # rule says the active ends inside it, which such an end does not.
   - id: ACT.6
     check: forbidden
     layers: [ActVEdgesOffDummy]

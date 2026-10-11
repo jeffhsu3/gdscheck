@@ -228,33 +228,57 @@ fn gate(c: &Corpus<'_>) {
     let w = c.src("GATE.1", "exact_width", 14.0);
     let s = c.src("GATE.2", "min_space", 28.0);
     assert_eq!(c.src("GATE.2", "min_notch", 28.0), s);
+    let pitch = c.src("GATE.2", "offtrack", 42.0);
+    assert_eq!(pitch, w + s);
+    assert_eq!(
+        c.src_param("GATE.2", "offtrack", "offset", 0.0),
+        0.0,
+        "the gates are drawn in the deck's frame"
+    );
+    // A gate's left wall, its centre on a multiple of the pitch.
+    let x = (OFFSET / pitch).round() * pitch - w / 2.0;
     let tall = 100.0;
 
+    // A gate a DBU narrow or wide has its centre a quarter nm off the pitch, which
+    // GATE.2 reads; the test ignores it.
     let mut rows = Rows::new(OFFSET);
     let elems = [w, w - DBU, w + DBU]
-        .map(|gw| bx(gate, OFFSET, rows.next(tall), gw, tall))
+        .map(|gw| bx(gate, x, rows.next(tall), gw, tall))
         .to_vec();
     c.write("gate", "GATE.1.narrow", true, elems);
 
+    // Two gates on the pitch; a gate a DBU right of it, and one half a pitch off.
+    let mut rows = Rows::new(OFFSET);
+    let y = rows.next(tall);
+    let mut elems = vec![bx(gate, x, y, w, tall), bx(gate, x + pitch, y, w, tall)];
+    elems.push(bx(gate, x + DBU, rows.next(tall), w, tall));
+    elems.push(bx(gate, x + pitch / 2.0, rows.next(tall), w, tall));
+    c.write("gate", "GATE.2.pitch", true, elems);
+
+    // A pair 28 nm apart, then a DBU nearer: the second gate is then off the pitch too.
     let mut rows = Rows::new(OFFSET);
     let mut elems = vec![];
     for gap in [s, s - DBU] {
         let y = rows.next(tall);
-        elems.push(bx(gate, OFFSET, y, w, tall));
-        elems.push(bx(gate, OFFSET + w + gap, y, w, tall));
+        elems.push(bx(gate, x, y, w, tall));
+        elems.push(bx(gate, x + w + gap, y, w, tall));
     }
     c.write("gate", "GATE.2.close", true, elems);
 
+    // A U whose extent is centred on the pitch, then one a DBU narrower inside, whose
+    // extent is not.
     let mut rows = Rows::new(OFFSET);
     let elems = [s, s - DBU]
-        .map(|gap| u_x(gate, OFFSET, rows.next(tall), tall, w, gap, w))
+        .map(|gap| u_x(gate, x - pitch / 2.0, rows.next(tall), tall, w, gap, w))
         .to_vec();
     c.write("gate", "GATE.2.notch", true, elems);
 
+    // A jogged gate's extent is a DBU wider, its centre off the pitch: the test ignores
+    // GATE.2.
     let mut rows = Rows::new(OFFSET);
     let elems = vec![
-        bx(gate, OFFSET, rows.next(tall), w, tall),
-        jog_x(gate, OFFSET, rows.next(tall), w, tall, DBU),
+        bx(gate, x, rows.next(tall), w, tall),
+        jog_x(gate, x, rows.next(tall), w, tall, DBU),
     ];
     c.write("gate", "GATE.4.bent", true, elems);
 }
@@ -489,14 +513,16 @@ fn act(c: &Corpus<'_>) {
     c.write("act", "ACT.3.notch", true, elems);
 
     // Both ends in a DUMMY; the right end on a DUMMY's left wall, which touches it;
-    // the right end a DBU short of one.
+    // the right end a DBU short of one; and the right end half covered, the DUMMY
+    // stopping half way up it.
     let mut rows = Rows::new(OFFSET);
     let mut elems = vec![];
-    for shift in [0.0, dw / 2.0, dw / 2.0 + DBU] {
+    let half = (dh + ah) / 2.0 - ah / 2.0;
+    for (shift, top) in [(0.0, dh), (dw / 2.0, dh), (dw / 2.0 + DBU, dh), (0.0, half)] {
         let y = rows.next(dh);
         elems.push(bx(act, OFFSET, y + (dh - ah) / 2.0, along, ah));
         elems.push(bx(dummy, OFFSET - dw / 2.0, y, dw, dh));
-        elems.push(bx(dummy, OFFSET + along - dw / 2.0 + shift, y, dw, dh));
+        elems.push(bx(dummy, OFFSET + along - dw / 2.0 + shift, y, dw, top));
     }
     c.write("act", "ACT.6.end", true, elems);
 

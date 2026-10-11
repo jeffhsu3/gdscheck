@@ -19,6 +19,15 @@ default and has no layer).
 The PDK ``extends: gt3``. The decks that changed live under ``pdks/gt2n/decks/``,
 and the rest are GT3's files. The suites match GT3's: ``main``, ``feol`` and ``beol``.
 
+Two of GT2N's own rules are read more closely than the runset does:
+
+* GATE.2, an exact 28 nm gate space, is read as the 42 nm gate pitch it makes with
+  GATE.1's 14 nm gate: every gate is centred on a multiple of 42 nm, as in all ten
+  libraries, and no two are closer than 28 nm. A design drawn in another frame sets
+  the rule's ``offset``. A gate missing from a row is not reported.
+* ACT.6 requires every part of an active's end to lie in a DUMMY. The runset reports
+  only an end that touches no DUMMY at all.
+
 
 Backside power
 --------------

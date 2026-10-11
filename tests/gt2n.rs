@@ -287,13 +287,19 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 /// minimum width one DBU under gives two; a pair too close, a slot too narrow, a
 /// shape that bends give one each.
 ///
+/// GATE.2 reads the 42 nm pitch as well as the 28 nm space: a gate a DBU or half a pitch
+/// off it gives one marker each, and the gate a DBU too close, or the U a DBU too
+/// narrow inside, is off the pitch as well - two each. A gate a DBU narrow, wide or
+/// jogged is off the pitch too, so the GATE.1 and GATE.4 tests ignore GATE.2.
+///
 /// A notch needs a shape that bends, and its joint is no exact width, so the notch
 /// tests ignore the shape's bend and exact-width rules. A DUMMY abutting a gate and
 /// one alone lie inside none, which DUMMY.4 also reads.
 ///
 /// A VBPR, GCUT, DUMMY or VT layer abutting another shares no area with it, which
 /// the runset's `include_touch = NONE` does not count; a GCUT abutting ACT is counted,
-/// under `include_touch = ALL`. GCUT.7 reads a cut's wall inside a gate, flush with
+/// under `include_touch = ALL`. ACT.6 reads an end a DBU clear of its DUMMY and one
+/// the DUMMY covers half way, stricter there than upstream. GCUT.7 reads a cut's wall inside a gate, flush with
 /// its wall on either side, but not inside a gate under a DUMMY: three.
 #[rstest]
 #[case("bpr", "BPR.1", "narrow", 4)]
@@ -307,8 +313,9 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 #[case("vbpr", "VBPR.3", "gcut", 1)]
 #[case("vbpr", "VBPR.4", "outside", 2)]
 #[case("gate", "GATE.1", "narrow", 4)]
-#[case("gate", "GATE.2", "close", 1)]
-#[case("gate", "GATE.2", "notch", 1)]
+#[case("gate", "GATE.2", "pitch", 2)]
+#[case("gate", "GATE.2", "close", 2)]
+#[case("gate", "GATE.2", "notch", 2)]
 #[case("gate", "GATE.4", "bent", 1)]
 #[case("dummy", "DUMMY.1", "narrow", 4)]
 #[case("dummy", "DUMMY.2", "alone", 2)]
@@ -325,7 +332,7 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 #[case("act", "ACT.2", "narrow", 2)]
 #[case("act", "ACT.3", "close", 1)]
 #[case("act", "ACT.3", "notch", 1)]
-#[case("act", "ACT.6", "end", 1)]
+#[case("act", "ACT.6", "end", 2)]
 #[case("act", "ACT.BPR.1", "close", 1)]
 #[case("npsel", "NSEL.1", "narrow", 2)]
 #[case("npsel", "NSEL.2", "narrow", 2)]
@@ -354,6 +361,7 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
     let ignore: &[&str] = match (rule, variant) {
         ("BPR.2" | "BPR.3", "notch") => &["BPR.1", "BPR.4"],
         ("GATE.2", "notch") => &["GATE.1", "GATE.4"],
+        ("GATE.1" | "GATE.4", _) => &["GATE.2"],
         ("DUMMY.2", _) => &["DUMMY.4"],
         _ => &[],
     };

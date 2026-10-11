@@ -98,6 +98,27 @@ impl Corpus<'_> {
         nm
     }
 
+    /// As [`Self::src`], for the numeric param `key`.
+    fn src_param(&self, id: &str, check: &str, key: &str, nm: f64) -> f64 {
+        let found: Vec<_> = self
+            .rules
+            .iter()
+            .filter(|r| r.id == id && r.check == check)
+            .collect();
+        assert!(!found.is_empty(), "{id} has no {check} entry in any deck");
+        for r in found {
+            let um = r
+                .num(key)
+                .unwrap_or_else(|| panic!("{id} {check} has no numeric {key}"));
+            assert!(
+                (um * 1000.0 - nm).abs() < 1e-6,
+                "{id} {check}: deck {key} is {} nm, the runset says {nm} nm",
+                um * 1000.0
+            );
+        }
+        nm
+    }
+
     fn layer(&self, name: &str) -> (i16, i16) {
         crate::helpers::layer(self.pdk, name)
     }
