@@ -119,6 +119,17 @@ impl Corpus<'_> {
         nm
     }
 
+    /// The radius in nm of the sized virtual layer `name`, one step of a sentence.
+    fn radius(&self, name: &str) -> f64 {
+        let def = self
+            .pdk
+            .virtual_layers
+            .iter()
+            .find(|v| v.name == name)
+            .unwrap_or_else(|| panic!("no virtual layer {name}"));
+        def.radius.unwrap_or_else(|| panic!("{name} has no radius")) * 1000.0
+    }
+
     fn layer(&self, name: &str) -> (i16, i16) {
         crate::helpers::layer(self.pdk, name)
     }

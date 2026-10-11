@@ -193,6 +193,14 @@ connectivity:
   - connector: V13
     layers: [RDL]
 
+virtual_layers:
+  # GATE.2: a gate missing from a row.  Closing the gates along x fills every space
+  # between two that face each other within 1 µm; less the gates and the 28 nm spaces
+  # either side of each, what is left is a space wider than GATE.2's.  A row's ends and
+  # the space between rows are never filled.
+  GateRun: GATE grow_x 0.5 shrink_x 0.5
+  GateMissing: GateRun not (GATE grow_x 0.014)
+
 layers:
   - name: ELVT
     gds_layer: 94

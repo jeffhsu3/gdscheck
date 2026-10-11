@@ -290,7 +290,10 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 /// GATE.2 reads the 42 nm pitch as well as the 28 nm space: a gate a DBU or half a pitch
 /// off it gives one marker each, and the gate a DBU too close, or the U a DBU too
 /// narrow inside, is off the pitch as well - two each. A gate a DBU narrow, wide or
-/// jogged is off the pitch too, so the GATE.1 and GATE.4 tests ignore GATE.2.
+/// jogged is off the pitch too, so the GATE.1 and GATE.4 tests ignore GATE.2. It reads
+/// a gate missing from a row as a space too wide: one missing, three missing, and two
+/// gates 994 nm apart, within the 1 µm the deck closes over, give one marker each; two
+/// gates 25 pitches apart, beyond it, and two in different rows give none.
 ///
 /// A notch needs a shape that bends, and its joint is no exact width, so the notch
 /// tests ignore the shape's bend and exact-width rules. A DUMMY abutting a gate and
@@ -314,6 +317,7 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
 #[case("vbpr", "VBPR.4", "outside", 2)]
 #[case("gate", "GATE.1", "narrow", 4)]
 #[case("gate", "GATE.2", "pitch", 2)]
+#[case("gate", "GATE.2", "missing", 3)]
 #[case("gate", "GATE.2", "close", 2)]
 #[case("gate", "GATE.2", "notch", 2)]
 #[case("gate", "GATE.4", "bent", 1)]

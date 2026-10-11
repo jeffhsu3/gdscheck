@@ -255,6 +255,29 @@ fn gate(c: &Corpus<'_>) {
     elems.push(bx(gate, x + pitch / 2.0, rows.next(tall), w, tall));
     c.write("gate", "GATE.2.pitch", true, elems);
 
+    // A gate missing from a row: three gates on the pitch; two with one missing between
+    // them, and with three; two 24 pitches apart, 994 nm facing, within the 1 µm the
+    // deck closes the gates over; two 25 pitches apart, beyond it, which read as two
+    // blocks; and two a pitch apart across x but in different rows, facing nowhere.
+    let reach = 2.0 * c.radius("GateRun#1");
+    assert_eq!(reach, 1000.0);
+    assert_eq!(c.radius("GateMissing#1"), s / 2.0);
+    let mut rows = Rows::new(OFFSET);
+    let y = rows.next(tall);
+    let mut elems: Vec<_> = (0..3)
+        .map(|k| bx(gate, x + k as f64 * pitch, y, w, tall))
+        .collect();
+    for apart in [2.0, 4.0, 24.0, 25.0] {
+        assert_eq!(apart * pitch - w <= reach, apart < 25.0);
+        let y = rows.next(tall);
+        elems.push(bx(gate, x, y, w, tall));
+        elems.push(bx(gate, x + apart * pitch, y, w, tall));
+    }
+    let y = rows.next(2.0 * tall + 10.0);
+    elems.push(bx(gate, x, y, w, tall));
+    elems.push(bx(gate, x + 2.0 * pitch, y + tall + 10.0, w, tall));
+    c.write("gate", "GATE.2.missing", true, elems);
+
     // A pair 28 nm apart, then a DBU nearer: the second gate is then off the pitch too.
     let mut rows = Rows::new(OFFSET);
     let mut elems = vec![];

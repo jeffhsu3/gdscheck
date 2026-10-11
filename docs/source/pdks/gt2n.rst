@@ -24,7 +24,10 @@ Two of GT2N's own rules are read more closely than the runset does:
 * GATE.2, an exact 28 nm gate space, is read as the 42 nm gate pitch it makes with
   GATE.1's 14 nm gate: every gate is centred on a multiple of 42 nm, as in all ten
   libraries, and no two are closer than 28 nm. A design drawn in another frame sets
-  the rule's ``offset``. A gate missing from a row is not reported.
+  the rule's ``offset``. A gate missing from a row is reported too: two gates facing
+  each other across x within 1 µm must be 28 nm apart. Gates further apart read as
+  separate blocks, and a row's ends are never read. An empty site in a row is a
+  missing gate, which ``gt2_6t_filler`` closes.
 * ACT.6 requires every part of an active's end to lie in a DUMMY. The runset reports
   only an end that touches no DUMMY at all.
 

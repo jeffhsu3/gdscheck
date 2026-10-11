@@ -10,9 +10,10 @@
 # that pitch, in the standard cells' frame: every gate of all ten libraries is centred on
 # a multiple of 42 nm, and so is every design placing them on the site.  A design drawn
 # in another frame sets `offset`, its first gate's centre.  The lower bound is read as
-# well, so two gates too close say so as a space.  A gate missing from a row - two gates
-# on the pitch, 70 nm apart - is not read.  GATE.3, a continuous gate, has no check
-# upstream.
+# well, so two gates too close say so as a space, and so is the upper bound: a gate
+# missing from a row - two gates on the pitch, 70 nm apart - leaves a space wider than
+# 28 nm between gates facing each other (`GateMissing` in pdk.yml).  GATE.3, a
+# continuous gate, has no check upstream.
 rules:
   - id: GATE.1
     check: exact_width
@@ -39,6 +40,10 @@ rules:
     value: 0.028
     params:
       facing: x
+  - id: GATE.2
+    check: forbidden
+    layers: [GateMissing]
+    value: 0.0
   - id: GATE.4
     check: forbidden
     layers: [GATEBent]
