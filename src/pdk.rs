@@ -299,6 +299,11 @@ struct RuleRaw {
     /// from a `forbidden`).
     #[serde(default)]
     pub text: Option<String>,
+    /// `absent`, `partial` or `weaker`: how the PDK's tech LEF falls short of the rule.
+    /// Unwritten says nothing either way: the deck has not been compared with the LEF
+    /// there, or the LEF states the rule as the manual does.
+    #[serde(default)]
+    pub tech_lef: Option<String>,
     /// Params whose value is a *layer*, given by name.  A check that takes a layer as a
     /// parameter (rather than as one of `layers`) would otherwise need its GDS number
     /// written into the deck - impossible for a derived layer, whose number is assigned
@@ -339,6 +344,33 @@ pub struct RuleDefinition {
     pub params: HashMap<String, Param>,
     pub ignore: Vec<Layer>,
     pub text: Option<String>,
+    /// How the PDK's tech LEF falls short of this rule, where the deck has compared
+    /// them: a router driven by it was not asked to keep the rule as the manual states
+    /// it, so a violation is a gap in the collateral rather than a flow that broke a
+    /// rule it knew.  Said beside the rule's count and in the report's category.
+    pub tech_lef: Option<TechLef>,
+}
+
+/// How a PDK's tech LEF falls short of a rule the deck checks.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum TechLef {
+    /// The LEF does not state the rule at all.
+    Absent,
+    /// The LEF states part of it: an approximation that covers some of the cases.
+    Partial,
+    /// The LEF states it with a weaker value than the manual's.
+    Weaker,
+}
+
+impl TechLef {
+    /// The note a report puts beside the rule.
+    pub fn note(self) -> &'static str {
+        match self {
+            TechLef::Absent => "not in the PDK's tech LEF",
+            TechLef::Partial => "only partly in the PDK's tech LEF",
+            TechLef::Weaker => "weaker in the PDK's tech LEF than the manual",
+        }
+    }
 }
 
 impl RuleDefinition {
@@ -905,8 +937,8 @@ impl PdkConfig {
                             continue;
                         }
 
-                        for b in layout.get(src_gds, src_dt) {
-                            let key: Vec<(i32, i32)> = b.xy.iter().map(|p| (p.x, p.y)).collect();
+                        for b in layout.get(src_gds, src_dt).iter() {
+                            let key: Vec<(i32, i32)> = b.xy().iter().map(|p| (p.x, p.y)).collect();
                             if seen_shapes.insert(key) {
                                 to_insert.push((
                                     vl_gds,
@@ -914,7 +946,7 @@ impl PdkConfig {
                                     GdsBoundary {
                                         layer: vl_gds,
                                         datatype: vl_dt,
-                                        xy: b.xy.clone(),
+                                        xy: b.xy().to_vec(),
                                         ..Default::default()
                                     },
                                 ));
@@ -926,7 +958,8 @@ impl PdkConfig {
                     // Geometric AND of the source layers (device recognition,
                     // e.g. CuPillarPad = Passiv.pillar AND dfpad).  If any source
                     // layer is missing or empty, the intersection is empty.
-                    let mut srcs: Vec<&[GdsBoundary]> = Vec::with_capacity(vl_def.layers.len());
+                    let mut srcs: Vec<&crate::layout::Shapes> =
+                        Vec::with_capacity(vl_def.layers.len());
                     let mut ok = true;
                     for src_name in &vl_def.layers {
                         let Some(src) = self.layer_map.get(src_name) else {
@@ -968,7 +1001,8 @@ impl PdkConfig {
                     };
                     let base_b = layout.get(base.gds_layer as i16, base.gds_datatype as i16);
 
-                    let mut clips: Vec<&[GdsBoundary]> = Vec::with_capacity(clip_names.len());
+                    let mut clips: Vec<&crate::layout::Shapes> =
+                        Vec::with_capacity(clip_names.len());
                     let mut ok = true;
                     for name in clip_names {
                         let Some(c) = self.layer_map.get(name) else {
@@ -1023,6 +1057,8 @@ impl PdkConfig {
                     .iter()
                     .map(|m| Self::merged_outer_boundary(m, 0, 0, None))
                     .collect();
+                    let ring_solid: crate::layout::Shapes =
+                        ring_solid.iter().map(|b| b.xy.as_slice()).collect();
 
                     let target_b = layout.get(target.gds_layer as i16, target.gds_datatype as i16);
                     for m in crate::merge::intersect_layers(&[target_b, &ring_solid]) {
@@ -1290,6 +1326,20 @@ impl PdkConfig {
                     params.insert(format!("{key}_dt"), Param::Num(l.gds_datatype as f64));
                 }
 
+                let tech_lef = match r.tech_lef.as_deref() {
+                    None => None,
+                    Some("absent") => Some(TechLef::Absent),
+                    Some("partial") => Some(TechLef::Partial),
+                    Some("weaker") => Some(TechLef::Weaker),
+                    Some(other) => {
+                        return Err(format!(
+                            "Rule '{}' tech_lef can only be `absent`, `partial` or \
+                             `weaker`, not `{other}`",
+                            r.id
+                        ));
+                    }
+                };
+
                 Ok(RuleDefinition {
                     id: r.id,
                     check: r.check,
@@ -1298,6 +1348,7 @@ impl PdkConfig {
                     params,
                     ignore,
                     text: r.text,
+                    tech_lef,
                 })
             })
             .collect::<Result<Vec<_>, String>>()?;

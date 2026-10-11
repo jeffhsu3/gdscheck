@@ -152,6 +152,29 @@ fn longer(a: (f64, f64, f64, f64), b: (f64, f64, f64, f64)) -> bool {
     len2(a) > len2(b)
 }
 
+/// The extent of two projected stretches on the same line. Closest-approach
+/// segments at an angle are not stretches of that wall and must not be joined.
+fn joined_stretch(
+    a: (f64, f64, f64, f64),
+    b: (f64, f64, f64, f64),
+) -> Option<(f64, f64, f64, f64)> {
+    let (dx, dy) = (a.2 - a.0, a.3 - a.1);
+    let len2 = dx * dx + dy * dy;
+    if len2 == 0.0 {
+        return None;
+    }
+    let (mut lo, mut hi) = (0.0f64, 1.0f64);
+    for (x, y) in [(b.0, b.1), (b.2, b.3)] {
+        if ((x - a.0) * dy - (y - a.1) * dx).abs() > 1e-6 * len2.sqrt() {
+            return None;
+        }
+        let t = ((x - a.0) * dx + (y - a.1) * dy) / len2;
+        lo = lo.min(t);
+        hi = hi.max(t);
+    }
+    Some((a.0 + lo * dx, a.1 + lo * dy, a.0 + hi * dx, a.1 + hi * dy))
+}
+
 /// The walls of one enclosed shape with the margin read on each: a shape has a few,
 /// and a map per contact was an allocation per contact.
 struct Walls(Vec<(Seg, Read)>);
@@ -678,7 +701,7 @@ pub fn run(
                     let dot = d0.0 * d1.0 + d0.1 * d1.1;
                     cross.abs() < 0.5 * ((d0.0 * d0.0 + d0.1 * d0.1).sqrt() + 1.0) && dot < 0.0
                 };
-                let rings = std::iter::once(&whole.outer).chain(whole.holes.iter());
+                let rings = whole.rings();
                 for ring in rings {
                     let n = ring.len();
                     for i in 0..n {
@@ -708,8 +731,9 @@ pub fn run(
                     .any(|&w| !real_wall(w));
                 if clipped { Some(None) } else { None }
             };
-            let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).unwrap_or(&empty);
+            let a_tile: &Vec<MergedPoly> = map_a.get(&(tx, ty)).map(|t| &**t).unwrap_or(&empty);
             let a_conv: Vec<Outline> = a_tile.iter().map(Outline::new).collect();
+            let mut grid_query = crate::merge::CellGridQuery::new(a_conv.len());
             // The line-end caps of each enclosing shape of the tile, found once: a
             // track's caps are the same for every via on it, and finding them walks
             // every pair of the track's walls.
@@ -719,7 +743,7 @@ pub fn run(
             // What this tile found: the region, the wall and the margin the report is
             // about (none for a report without one), the tile, and the report.
             let mut out: Vec<Report> = Vec::new();
-            let b_tile: &[MergedPoly] = map_b.get(&(tx, ty)).map(Vec::as_slice).unwrap_or(&[]);
+            let b_tile: &[MergedPoly] = map_b.get(&(tx, ty)).map(|t| t.as_slice()).unwrap_or(&[]);
             for (bm, region, index) in b_polys.iter(b_tile) {
                 // Every real wall lies in some tile's core and is read there, so a
                 // tile reads the part of the shape in its core and no more: a piece
@@ -789,10 +813,17 @@ pub fn run(
                     match a_boxes.get(&(tx, ty)) {
                         Some((_, grid)) => {
                             let (x0, y0, x1, y1) = bp.bbox;
-                            grid.covering((x0 as i32, y0 as i32, x1 as i32, y1 as i32))
-                                .into_iter()
-                                .map(|i| i as usize)
-                                .collect()
+                            let mut near: Vec<usize> = grid
+                                .covering(
+                                    (x0 as i32, y0 as i32, x1 as i32, y1 as i32),
+                                    &mut grid_query,
+                                )
+                                .iter()
+                                .map(|&i| i as usize)
+                                .collect();
+                            // Preserve polygon order when equal margins choose a marker.
+                            near.sort_unstable();
+                            near
                         }
                         None => Vec::new(),
                     }
@@ -1114,8 +1145,19 @@ pub fn run(
                                     worst = Some(m);
                                 }
                                 let e = walls.entry(Walls::key(&p), m);
-                                if worse(largest, m.0, e.0) || (same(m.0, e.0) && longer(m.1, e.1)) {
+                                if worse(largest, m.0, e.0) {
                                     *e = m;
+                                } else if same(m.0, e.0) {
+                                    // Equal projected margins on separate parts
+                                    // of one wall contribute their full extent,
+                                    // just as the cross-tile reduction does.
+                                    // Keep the usual closest-approach selection
+                                    // for oblique/corner reads.
+                                    if !p.oblique && let Some(joined) = joined_stretch(e.1, m.1) {
+                                        e.1 = joined;
+                                    } else if longer(m.1, e.1) {
+                                        *e = m;
+                                    }
                                 }
                             }
                         }
@@ -1275,7 +1317,7 @@ pub fn run(
                 let unioned = crate::merge::union_pieces(owned);
                 let mut segs = Vec::new();
                 for m in &unioned {
-                    for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+                    for ring in m.rings() {
                         let n = ring.len();
                         for i in 0..n {
                             let (a, b) = (ring[i], ring[(i + 1) % n]);

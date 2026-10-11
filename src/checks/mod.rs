@@ -10,7 +10,7 @@
 //! - [`space`]: the gap between two regions, or between two walls of one (a notch), and
 //!   the reach nothing may lie beyond.
 //! - [`enclosure`]: the margin of one region inside another.
-//! - [`shape`]: a region's own extents, edges, corners, holes, vertices and grid.
+//! - [`shape`]: a region's own extents, edges, corners, holes, vertices, grid and tracks.
 //! - [`area`]: a region's area.
 //! - [`count`]: how many regions of a layer the chip holds.
 //! - [`density`]: the coverage of layers over an area.
@@ -38,7 +38,6 @@ use crate::layout::FlatLayout;
 use crate::merge::SharedCache;
 use crate::pdk::{Layer, RuleDefinition};
 use crate::violation::Violation;
-use gds21::GdsBoundary;
 
 /// Whether a rule reads its layers from the flat layout rather than the tiled cache,
 /// and so sees a virtual layer only if it was materialised there first: the ring and
@@ -50,8 +49,8 @@ pub fn reads_layout(rule: &RuleDefinition) -> bool {
     ) || residual::whole_layout(rule)
 }
 
-/// Returns a slice of all boundaries on the given layer.
-pub fn boundaries_on<'a>(layout: &'a FlatLayout, layer: &Layer) -> &'a [GdsBoundary] {
+/// All shapes on the given layer.
+pub fn boundaries_on<'a>(layout: &'a FlatLayout, layer: &Layer) -> &'a crate::layout::Shapes {
     layout.get(layer.gds_layer as i16, layer.gds_datatype as i16)
 }
 
@@ -82,6 +81,12 @@ pub fn run_rule(
         "min_notch" => space::notch::run(rule, layout, dbu_to_um, merged),
         "min_overlap" => space::run_min_overlap(rule, layout, dbu_to_um, merged),
         "max_space" => space::max::run(rule, layout, dbu_to_um, merged),
+        "min_track_run" => {
+            space::track::run(space::track::Kind::Run, rule, layout, dbu_to_um, merged)
+        }
+        "min_tip_stagger" => {
+            space::track::run(space::track::Kind::Stagger, rule, layout, dbu_to_um, merged)
+        }
         // Enclosure: the margin of one region inside another.
         "min_enclosure" => enclosure::run(enclosure::Kind::Min, rule, layout, dbu_to_um, merged),
         "max_enclosure" => enclosure::run(enclosure::Kind::Max, rule, layout, dbu_to_um, merged),
@@ -150,6 +155,7 @@ pub fn run_rule(
         "ring_covers_boundary" => shape::ring_covers_boundary::run(rule, layout, dbu_to_um),
         "max_vertices" => shape::vertices::run(rule, layout, dbu_to_um),
         "offgrid" => shape::offgrid::run(rule, layout, dbu_to_um, merged),
+        "offtrack" => shape::offtrack::run(rule, layout, dbu_to_um, merged),
         "wide_uncovered" => shape::wide_uncovered::run(rule, layout, dbu_to_um, merged),
         // Area: a region's area, per region, hole, containment or chip.
         "min_area" => area::run(area::Kind::Min, rule, layout, dbu_to_um, merged, conn),
@@ -238,6 +244,11 @@ pub fn run_rule(
             }
             keep
         });
+    }
+    if rule.tech_lef.is_some() {
+        for v in &mut out {
+            v.tech_lef = rule.tech_lef;
+        }
     }
     out
 }

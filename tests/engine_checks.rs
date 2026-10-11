@@ -203,7 +203,10 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 ///
 /// - `straddle_min` is a 0.4 µm bar across the line at x = 40 with its midpoint off the
 ///   line; `straddle_max` a block 12 µm across it and 8 tall, over W.max's 10 in one
-///   dimension only.
+///   dimension only - W.max reads every facing pair (`span: any`).
+/// - `wide_shapes` is W.wide's, a maximum read as the narrowest span: 1 µm wires 30 µm
+///   long - plain, an L, a T, a cross - and a 10 µm plate are clean, a 10.002 µm plate
+///   and a 12 µm one across x = 240 too wide once each.
 /// - `bent_trace` is a 45° bar 0.6 across and 5 long, under W.bent's 0.7 and over
 ///   W.min's 0.5; `bent_short` the same bar 0.8 long, shorter than W.bent's 1 µm run.
 /// - `length_long` and `length_short` are 0.4 µm bars of Inner 6 and 4 µm long either
@@ -259,6 +262,8 @@ fn max_space_grows_the_reference_as_a_square_and_reads_across_tiles(
 #[case("straddle_min", "W.min", 2)]
 #[case("straddle_min", "W.max", 0)]
 #[case("straddle_max", "W.max", 2)]
+#[case("straddle_max", "W.wide", 0)]
+#[case("wide_shapes", "W.wide", 2)]
 #[case("straddle_max", "W.min", 0)]
 #[case("bent_trace", "W.bent", 2)]
 #[case("bent_trace", "W.min", 0)]
@@ -1211,6 +1216,7 @@ fn overlap_meets_the_bound_exactly_and_reads_the_pair(
 #[case("array_tile_lines", "R.array", 1)]
 #[case("bare", "R.bare", 3)]
 #[case("bare", "R.edges", 4)]
+#[case("multiple", "R.multiple", 2)]
 #[case("covered_exact", "R.uncovered", 0)]
 #[case("covered_exact", "R.polygon", 0)]
 #[case("covered_short", "R.uncovered", 1)]
@@ -1271,4 +1277,58 @@ fn a_whole_selection_keeps_only_what_its_boolean_is(
         "{pattern}"
     );
     assert_eq!(count("selection", pattern, "SEL.reach"), 0, "{pattern}");
+}
+
+/// Grids and tracks, on the drawings in `gen/engine/grid.rs`: vertices on a grid from
+/// the origin on both coordinates (`G.both`) and from an offset on one (`G.y`), and a
+/// region's centreline across an axis on a pitch (`T.y` from an offset, `T.x` from the
+/// origin) - a half-DBU centre read exactly, a region whole across a tile line, an L by
+/// its box, and negative coordinates for each.  Every Via shape is read by both track
+/// rules, so each case says what the other sees too.
+#[rstest]
+#[case("grid_on", "G.both", 0)]
+#[case("grid_x_off", "G.both", 4)]
+#[case("grid_corner", "G.both", 2)]
+#[case("grid_negative", "G.both", 4)]
+#[case("grid_inner", "G.both", 0)]
+#[case("grid_tile_line", "G.both", 4)]
+#[case("offset_on", "G.y", 0)]
+#[case("offset_off", "G.y", 4)]
+#[case("offset_negative_on", "G.y", 0)]
+#[case("offset_negative_off", "G.y", 4)]
+#[case("offset_tile_line", "G.y", 0)]
+#[case("track_on", "T.y", 0)]
+#[case("track_on", "T.x", 0)]
+#[case("track_off", "T.y", 1)]
+#[case("track_off", "T.x", 0)]
+#[case("track_half", "T.x", 1)]
+#[case("track_half", "T.y", 0)]
+#[case("track_tile_line", "T.y", 1)]
+#[case("track_tile_line", "T.x", 0)]
+#[case("track_bent_on", "T.y", 0)]
+#[case("track_bent_on", "T.x", 0)]
+#[case("track_bent_off", "T.y", 1)]
+#[case("track_negative", "T.y", 1)]
+#[case("track_negative", "T.x", 0)]
+fn grid_rules_read_the_offset_and_the_centreline(
+    #[case] pattern: &str,
+    #[case] rule: &str,
+    #[case] expected: usize,
+) {
+    assert_eq!(count("grid", pattern, rule), expected, "{pattern}: {rule}");
+}
+
+/// An edge cut at a region's boundary: `inside_part` keeps what lies inside and
+/// `outside_part` what lies outside, and an edge on the region's wall is inside, on
+/// every side alike.  `walls` puts one Inner wall on each of Outer's four walls, an
+/// Inner square inside and one outside: 4 + 4 inside, 12 + 4 outside.  The half-open
+/// ray cast behind the classification read a wall piece as inside on the left and
+/// bottom walls and as outside on the right and top ones - 6 and 18 - so a flush edge
+/// was selected or not by which wall it lay on (aesc-silicon/gdscheck#44).
+#[test]
+fn an_edge_on_a_wall_is_inside_on_every_side() {
+    assert_eq!(count("selection", "walls", "SEL.in"), 8);
+    assert_eq!(count("selection", "walls", "SEL.out"), 16);
+    assert_eq!(count("selection", "walls", "SEL.enc"), 0);
+    assert_eq!(count("selection", "walls", "SEL.reach"), 0);
 }

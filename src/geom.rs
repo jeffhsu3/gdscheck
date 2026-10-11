@@ -258,7 +258,7 @@ impl<'a> WallFilter<'a> {
             obliques: Vec::new(),
         };
         for m in reference {
-            for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+            for ring in m.rings() {
                 let n = ring.len();
                 for i in 0..n {
                     let (a, b) = (ring[i], ring[(i + 1) % n]);
@@ -405,7 +405,7 @@ fn outside_part(
 ) -> Vec<(f64, f64)> {
     let mut cuts = vec![lo, hi];
     for m in region {
-        for ring in std::iter::once(&m.outer).chain(m.holes.iter()) {
+        for ring in m.rings() {
             let n = ring.len();
             for i in 0..n {
                 let (p, q) = (ring[i], ring[(i + 1) % n]);
@@ -828,7 +828,7 @@ fn acute_corners(
     core: Core,
     push_edge: &mut impl FnMut(f64, f64, f64, f64, f64),
 ) {
-    for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+    for ring in poly.rings() {
         let n = ring.len();
         if n < 3 {
             continue;
@@ -2286,7 +2286,7 @@ mod width_tests {
     fn poly(pts: &[(i32, i32)]) -> MergedPoly {
         MergedPoly {
             outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -2392,7 +2392,7 @@ mod wall_filter_tests {
     fn poly(pts: &[(i32, i32)]) -> MergedPoly {
         MergedPoly {
             outer: pts.iter().map(|&(x, y)| IntPoint::new(x, y)).collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -2603,7 +2603,7 @@ fn in_ring(p: (i64, i64), ring: &[IntPoint]) -> bool {
 impl<'a> Outline<'a> {
     pub fn new(poly: &'a MergedPoly) -> Self {
         let mut segs = Vec::new();
-        for ring in std::iter::once(&poly.outer).chain(poly.holes.iter()) {
+        for ring in poly.rings() {
             let n = ring.len();
             if n < 3 {
                 continue;
@@ -2659,8 +2659,8 @@ impl<'a> Outline<'a> {
     }
 
     fn vertices(&self) -> impl Iterator<Item = (i64, i64)> + '_ {
-        std::iter::once(&self.poly.outer)
-            .chain(self.poly.holes.iter())
+        self.poly
+            .rings()
             .flatten()
             .map(|p| (p.x as i64, p.y as i64))
     }
@@ -3145,17 +3145,33 @@ fn run_along(
         (min_run as i128) * (min_run as i128),
     );
     // The stretches of a profile deeper than `wide` within `[lo, hi]`, in the
-    // profile's own units; nothing behind at all is as deep as it gets.
+    // profile's own units; nothing behind at all is as deep as it gets.  A deep
+    // stretch counts only where it is itself longer than `wide`, read along the whole
+    // wall and not just the run: the line behind must be wide both ways, as a wide
+    // layer sized in and out again keeps it.  Behind a narrow wire's tip lies the
+    // wire's whole length - deep, but no longer than the wire is wide - and a
+    // neighbour beside a short stretch of a wide line still faces a wide line.
     let deep_stretches = |profile: &DepthProfile, len2: i128, lo: i128, hi: i128| {
-        profile
-            .iter()
-            .filter_map(|&(p0, p1, depth)| {
+        let mut joined: Vec<(i128, i128)> = Vec::new();
+        for &(p0, p1, depth) in profile.iter() {
+            let deep = match depth {
+                None => true,
+                Some(c) => c * c > wide2 * len2,
+            };
+            if p1 <= p0 || !deep {
+                continue;
+            }
+            match joined.last_mut() {
+                Some(last) if p0 <= last.1 => last.1 = last.1.max(p1),
+                _ => joined.push((p0, p1)),
+            }
+        }
+        joined
+            .into_iter()
+            .filter(|&(p0, p1)| (p1 - p0) * (p1 - p0) > wide2 * len2)
+            .filter_map(|(p0, p1)| {
                 let (p0, p1) = (p0.max(lo), p1.min(hi));
-                let deep = match depth {
-                    None => true,
-                    Some(c) => c * c > wide2 * len2,
-                };
-                (p1 > p0 && deep).then_some((p0, p1))
+                (p1 > p0).then_some((p0, p1))
             })
             .collect::<Vec<_>>()
     };
@@ -3833,13 +3849,13 @@ mod space_tests {
 
     fn rect(x0: i32, y0: i32, x1: i32, y1: i32) -> MergedPoly {
         MergedPoly {
-            outer: vec![
+            outer: smallvec::smallvec![
                 IntPoint::new(x0, y0),
                 IntPoint::new(x1, y0),
                 IntPoint::new(x1, y1),
                 IntPoint::new(x0, y1),
             ],
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         }
     }
 
@@ -3945,7 +3961,7 @@ mod space_tests {
             .iter()
             .map(|&(x, y)| IntPoint::new(x, y))
             .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let ol = Outline::new(&l);
         // A 0.3 by 0.1 bar over the L's arm, 0.2 above it and 0.5 short of its upright.
@@ -3958,6 +3974,37 @@ mod space_tests {
         assert!(parallel_run_applies(&ol, &oc, 300, 150, 0, None));
     }
 
+    /// A line is as wide as its narrower side.  Behind a 40 wide wire's tip lies its
+    /// whole 200 length, but the tip is 40 long, so the wire is no wider at its tip than
+    /// anywhere else; and a 200 by 1000 block is a 200 wide line, however deep.  A
+    /// narrow tip that comes near only a short stretch of a wide line's side still
+    /// faces a wide line.
+    #[test]
+    fn the_wide_line_gate_reads_the_narrower_side() {
+        let (tip, other) = (rect(0, 0, 40, 200), rect(0, 246, 40, 446));
+        let (ot, oo) = (Outline::new(&tip), Outline::new(&other));
+        assert!(
+            !parallel_run_applies(&ot, &oo, 60, 59, 0, None),
+            "two 40 wide tips are not a 60 wide line"
+        );
+        assert!(parallel_run_applies(&ot, &oo, 60, 39, 0, None));
+
+        let (deep, wire) = (rect(0, 0, 200, 1000), rect(0, 1050, 200, 1090));
+        let (od, ow) = (Outline::new(&deep), Outline::new(&wire));
+        assert!(
+            !parallel_run_applies(&od, &ow, 500, 499, 0, None),
+            "a 200 by 1000 block is a 200 wide line"
+        );
+        assert!(parallel_run_applies(&od, &ow, 500, 199, 0, None));
+
+        let (wide, near) = (rect(0, 0, 1000, 200), rect(480, 250, 520, 450));
+        let (owide, onear) = (Outline::new(&wide), Outline::new(&near));
+        assert!(
+            parallel_run_applies(&owide, &onear, 60, 199, 0, None),
+            "a 40 tip over a 200 wide line faces a wide line along 40"
+        );
+    }
+
     /// A bend counts only at the gap.
     #[test]
     fn a_diagonal_counts_within_the_limit_alone() {
@@ -3966,7 +4013,7 @@ mod space_tests {
                 .iter()
                 .map(|&(x, y)| IntPoint::new(x, y))
                 .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let oa = Outline::new(&a);
         let near = rect(1200, 0, 1500, 1000);
@@ -3979,7 +4026,7 @@ mod space_tests {
                 .iter()
                 .map(|&(x, y)| IntPoint::new(x, y))
                 .collect(),
-            holes: vec![],
+            holes: crate::merge::Holes::new(),
         };
         let above = rect(0, 1200, 1000, 1500);
         assert!(!has_diagonal_within(
@@ -4012,7 +4059,7 @@ mod space_tests {
         ));
         let ring = MergedPoly {
             outer: rect(0, 0, 100, 100).outer,
-            holes: vec![rect(30, 30, 70, 70).outer],
+            holes: vec![rect(30, 30, 70, 70).outer.to_vec()].into(),
         };
         let island = rect(40, 40, 60, 60);
         assert!(

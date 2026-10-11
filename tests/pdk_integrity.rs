@@ -245,7 +245,10 @@ fn every_mode_word_is_one_its_check_knows() {
         ("facing", &["x", "y", "none"]),
         ("metric", &["euclidian", "square", "sidewall"]),
         ("net", &["same", "different", "connected"]),
-        ("op", &["apart", "beyond", "overlap", "uncovered"]),
+        (
+            "op",
+            &["apart", "beyond", "overlap", "touching", "uncovered"],
+        ),
         ("pairs", &["disjoint", "overlapping", "any"]),
         ("reach", &["round"]),
         (
@@ -262,7 +265,7 @@ fn every_mode_word_is_one_its_check_knows() {
             ],
         ),
         ("sides", &["all", "any", "opposite", "adjacent", "line_end"]),
-        ("span", &["narrowest"]),
+        ("span", &["any", "narrowest"]),
         ("touching", &["separate"]),
         ("walls", &["unshared"]),
     ];

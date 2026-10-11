@@ -36,7 +36,7 @@ mod tests;
 
 use super::params::{NotAWord, mode};
 use crate::layout::FlatLayout;
-use crate::merge::{SharedCache, TileMap, clipped_area_dbu};
+use crate::merge::{Holes, SharedCache, TileMap, clipped_area_dbu, ring};
 use crate::pdk::RuleDefinition;
 use crate::violation::Violation;
 use rayon::prelude::*;
@@ -120,10 +120,10 @@ impl Scope {
 /// A box in DBU: `(x0, y0, x1, y1)`.
 pub type Box = (i64, i64, i64, i64);
 
-fn bbox_of<'a>(shapes: impl Iterator<Item = &'a gds21::GdsBoundary>) -> Option<Box> {
+fn bbox_of<'a>(shapes: impl Iterator<Item = crate::layout::Shape<'a>>) -> Option<Box> {
     let mut b = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
     for s in shapes {
-        for p in &s.xy {
+        for p in s.xy() {
             b.0 = b.0.min(p.x as i64);
             b.1 = b.1.min(p.y as i64);
             b.2 = b.2.max(p.x as i64);
@@ -159,8 +159,8 @@ fn filled_die(die: &TileMap, tile: i64) -> Option<TileMap> {
     let mut out = die.clone();
     for hole in holes {
         let poly = crate::merge::MergedPoly {
-            outer: hole,
-            holes: vec![],
+            outer: ring(hole),
+            holes: Holes::new(),
         };
         let (mut x0, mut y0, mut x1, mut y1) = (i64::MAX, i64::MAX, i64::MIN, i64::MIN);
         for p in &poly.outer {
@@ -209,7 +209,7 @@ pub fn coverage_dbu2(maps: &[&TileMap], tile: i64, window: Box) -> f64 {
                     let cy0 = (ty * tile).max(wy0) as f64;
                     let cx1 = ((tx + 1) * tile).min(wx1) as f64;
                     let cy1 = ((ty + 1) * tile).min(wy1) as f64;
-                    for p in polys {
+                    for p in polys.iter() {
                         covered += clipped_area_dbu(p, cx0, cy0, cx1, cy1);
                     }
                 }
@@ -328,7 +328,7 @@ pub fn run(
             .map(|k| {
                 let parts: Vec<&[crate::merge::MergedPoly]> = layer_maps
                     .iter()
-                    .filter_map(|m| m.get(&k).map(Vec::as_slice))
+                    .filter_map(|m| m.get(&k).map(|t| t.as_slice()))
                     .collect();
                 let polys = if parts.len() == 1 {
                     parts[0].to_vec()
@@ -337,6 +337,7 @@ pub fn run(
                 };
                 (k, polys)
             })
+            .map(|(k, v)| (k, crate::merge::Tile::from(v)))
             .collect();
         vec![&union]
     } else {
@@ -360,6 +361,7 @@ pub fn run(
                         ),
                     ))
                 })
+                .map(|(k, v)| (k, crate::merge::Tile::from(v)))
                 .collect();
             vec![&clipped]
         }

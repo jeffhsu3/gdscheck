@@ -92,7 +92,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     // a hundred thousand intersections to learn that, on every width rule of the deck.
     let mut at: HashMap<(i32, i32), Vec<usize>> = HashMap::new();
     for (i, p) in polys.iter().enumerate() {
-        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+        for q in p.rings().flatten() {
             let owners = at.entry((q.x, q.y)).or_default();
             if owners.last() != Some(&i) {
                 owners.push(i);
@@ -112,7 +112,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     // Within one polygon: a vertex its own rings visit twice.
     for p in polys {
         let mut count: HashMap<(i32, i32), u32> = HashMap::new();
-        for q in std::iter::once(&p.outer).chain(p.holes.iter()).flatten() {
+        for q in p.rings().flatten() {
             *count.entry((q.x, q.y)).or_default() += 1;
         }
         let mut twice: Vec<_> = count
@@ -134,7 +134,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     let mut edges: Vec<(IntPoint, IntPoint)> = Vec::new();
     let mut by_cell: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
     for p in polys {
-        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+        for ring in p.rings() {
             let n = ring.len();
             for i in 0..n {
                 let (a, b) = (ring[i], ring[(i + 1) % n]);
@@ -154,7 +154,7 @@ pub fn pinch_points(polys: &[MergedPoly]) -> Vec<(f64, f64)> {
     let collinear = |u: (i128, i128), v: (i128, i128)| u.0 * v.1 - u.1 * v.0 == 0;
     let mut touched: Vec<(i32, i32)> = Vec::new();
     for p in polys {
-        for ring in std::iter::once(&p.outer).chain(p.holes.iter()) {
+        for ring in p.rings() {
             let n = ring.len();
             for i in 0..n {
                 let v = ring[i];
@@ -226,15 +226,15 @@ pub fn run_width(
 ) -> Vec<Violation> {
     let mut violations = Vec::new();
     let tile = merged.tile_dbu() as i64;
-    // `span: narrowest`, for a maximum: a shape is too wide only where its narrowest
-    // dimension exceeds the value - where a value x value square fits inside it -
-    // rather than wherever two facing walls are further apart than that.  A 1 x 300 µm
-    // filler stripe has a width of 1 by the first reading and of 300 by the second.
-    // IHP reads AFil.a, GFil.a and Pad.a1 the first way (an opening by half the value,
-    // what survives is the violation); its metal-filler and LBE maxima are the bounding
-    // box's long side, `max_length`, no width at all.
+    // A maximum reads `span: narrowest` unless told otherwise: a shape is too wide only
+    // where its narrowest dimension exceeds the value - where a value x value square
+    // fits inside it - the opening by half the value that a rule manual's "maximum
+    // width" and KLayout's decks mean.  `span: any` is every pair of facing walls
+    // further apart than the value: a wire's two ends face each other across its
+    // length, so every wire, L, T and cross longer than the value was too wide.
+    let is_max = matches!(limit, Limit::AtMost(_));
     let narrowest = match rule.word("span") {
-        Some("narrowest") if matches!(limit, Limit::AtMost(_)) => true,
+        Some("narrowest") if is_max => true,
         Some("narrowest") => {
             eprintln!(
                 "[{}] {check_name}: `span: narrowest` is a maximum's reading",
@@ -242,7 +242,8 @@ pub fn run_width(
             );
             false
         }
-        Some("any") | None => false,
+        None => is_max,
+        Some("any") => false,
         Some(other) => {
             eprintln!(
                 "[{}] {check_name}: span can be `any` or `narrowest`, not `{other}`",
@@ -377,7 +378,7 @@ fn narrowest_over(
             let (fx0, fy0, fx1, fy1) =
                 (x0 as f64, y0 as f64, (x0 + tile) as f64, (y0 + tile) as f64);
             let mut wide: Vec<MergedPoly> = Vec::new();
-            for poly in polys {
+            for poly in polys.iter() {
                 if crate::merge::clipped_area_dbu(poly, fx0, fy0, fx1, fy1) <= 0.0 {
                     continue;
                 }
@@ -404,6 +405,7 @@ fn narrowest_over(
             let pieces = crate::merge::clip_to_box(wide, x0, y0, x0 + tile, y0 + tile);
             (!pieces.is_empty()).then_some(((tx, ty), pieces))
         })
+        .map(|(k, v)| (k, crate::merge::Tile::from(v)))
         .collect();
     crate::merge::stitch_regions(&opened, tile as i32)
         .into_iter()
@@ -519,11 +521,11 @@ pub fn run_gate(
             let mut out = Vec::new();
             // With no reference here nothing is shared with its boundary, and everything
             // is unshared: an `unshared` rule still measures the body's plain width.
-            let refs = rmap.get(&(tx, ty)).unwrap_or(&none);
+            let refs = rmap.get(&(tx, ty)).map(|t| &**t).unwrap_or(&none);
             if on && refs.is_empty() {
                 return out.into_iter();
             }
-            let excluded = omap.map(|m| m.get(&(tx, ty)).unwrap_or(&none).as_slice());
+            let excluded = omap.map(|m| m.get(&(tx, ty)).map(|t| &**t).unwrap_or(&none).as_slice());
             let walls = WallFilter::new(refs, on, excluded);
             // A pinch is a width of zero at a vertex; it counts where the filter would
             // keep that point.  A bent-only rule reads 45° runs and a vertex has none, and
@@ -546,7 +548,7 @@ pub fn run_gate(
                     ));
                 }
             }
-            for p in polys {
+            for p in polys.iter() {
                 out.extend(scan_widths(
                     p,
                     core,
