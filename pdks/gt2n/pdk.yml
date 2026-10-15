@@ -13,10 +13,8 @@
 # the LEF's values.
 #
 # The backside stack, BV0 to BRDL, joins the buried power rail from below.  The runset
-# connects it and checks none of it, and neither does this PDK; its layers are declared
-# so the connect graph, and SDCON.2's different-net space, see the backside nets.
-# The LEF's backside declarations are not DRC checks here.  See
-# docs/source/pdks/gt2n.rst for the source audit.
+# connects it and checks none of it; this PDK checks it from the LEF as well, the
+# same way.  See docs/source/pdks/gt2n.rst for the source audit.
 name: GT2N
 version: "0.1"
 extends: gt3
@@ -24,13 +22,16 @@ extends: gt3
 suites:
   - name: main
     path: suites/main.yml
-    description: Every deck, through RDL (BV0-BRDL connectivity only)
+    description: Every deck, front and back
   - name: feol
     path: suites/feol.yml
     description: Front end and middle of line, through V0 (a standard cell)
   - name: beol
     path: suites/beol.yml
     description: Routing stack, M1 to RDL
+  - name: backside
+    path: suites/backside.yml
+    description: Backside stack, BV0 to BRDL (tech LEF)
 
 decks:
   - name: bpr
@@ -153,6 +154,36 @@ decks:
   - name: rdl
     path: decks/rdl.yml
     description: Redistribution layer (tech LEF)
+  - name: bv0
+    path: decks/bv0.yml
+    description: Backside via 0 (tech LEF)
+  - name: bm1
+    path: decks/bm1.yml
+    description: Backside metal 1 (tech LEF)
+  - name: bv1
+    path: decks/bv1.yml
+    description: Backside via 1 (tech LEF)
+  - name: bm2
+    path: decks/bm2.yml
+    description: Backside metal 2 (tech LEF)
+  - name: bv2
+    path: decks/bv2.yml
+    description: Backside via 2 (tech LEF)
+  - name: bm3
+    path: decks/bm3.yml
+    description: Backside metal 3 (tech LEF)
+  - name: bv3
+    path: decks/bv3.yml
+    description: Backside via 3 (tech LEF)
+  - name: bm4
+    path: decks/bm4.yml
+    description: Backside metal 4 (tech LEF)
+  - name: bv4
+    path: decks/bv4.yml
+    description: Backside via 4 (tech LEF)
+  - name: brdl
+    path: decks/brdl.yml
+    description: Backside redistribution layer (tech LEF)
 
 # The runset's connect database: GT3's, with the backside stack below the buried rail.
 connectivity:
@@ -278,6 +309,22 @@ virtual_layers:
   V12OutsideM13: V12 not_inside M13
   V13OutsideM13: V13 not_inside M13
   V13OutsideRDL: V13 not_inside RDL
+
+  # The backside, from the tech LEF, as above.
+  BM1Bent: BM1 not_rectangle
+  BM2Bent: BM2 not_rectangle
+  BM3Bent: BM3 not_rectangle
+  BM4Bent: BM4 not_rectangle
+  BV0OutsideBPR: BV0 not_inside BPR
+  BV0OutsideBM1: BV0 not_inside BM1
+  BV1OutsideBM1: BV1 not_inside BM1
+  BV1OutsideBM2: BV1 not_inside BM2
+  BV2OutsideBM2: BV2 not_inside BM2
+  BV2OutsideBM3: BV2 not_inside BM3
+  BV3OutsideBM3: BV3 not_inside BM3
+  BV3OutsideBM4: BV3 not_inside BM4
+  BV4OutsideBM4: BV4 not_inside BM4
+  BV4OutsideBRDL: BV4 not_inside BRDL
 
 layers:
   - name: ELVT

@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-//! Routing patterns, M1-RDL and V1-V13. The odd metals run along y and the even ones
-//! (and RDL) along x, and each metal's six rules read the same way on its own axes: `.1`
+//! Routing patterns, M1-RDL and V1-V13, and the backside, BV0-BRDL. The odd metals
+//! run along y and the even ones (and RDL) along x, on either side, and each metal's six rules read the same way on its own axes: `.1`
 //! its width, `.2` its length, `.3` the space across its wires, `.4` the space between
 //! their tips, `.5` the space corner to corner, `.6` a bend. So one builder draws every
 //! metal, along `u` and across `v`, and turns the result onto the metal's axes.
@@ -11,7 +11,9 @@
 //! M1-M6 and V1-V5 are the runset's. Above them the rules are the tech LEF's, their ids
 //! marked `.LEF`: M10-M13 have no `.2`, RDL only `.1` and `.3`, and a via has no rules
 //! on its walls lying on its metals' outlines, only on its lying inside them, and its
-//! `.5` space, read every way, in place of the runset's `.6` corner.
+//! `.5` space, read every way, in place of the runset's `.6` corner. The backside reads
+//! as the LEF's frontside does, BPR being the runset's: BM1-BM4 have no `.2`, BRDL only
+//! `.1` and `.3`.
 //!
 //! A via is flush with the metal running along y across x, and with the one running
 //! along x across y, as V*.3 and V*.4 ask; each metal runs past it along its length,
@@ -31,7 +33,7 @@ pub(super) fn generate(c: &Corpus<'_>) {
         (5, [21.0, 42.0, 21.0, 30.0, 24.0]),
         (6, [38.0, 55.0, 38.0, 55.0, 45.0]),
     ] {
-        metal(c, &Metal::new(n, false, w, Some(len), s, Some((t, k))));
+        metal(c, &Metal::front(n, w, Some(len), s, Some((t, k))));
     }
     // gt2_tech.lef: WIDTH, MINSIZE's length, SPACING, the EOLKEEPOUT's forward
     // extension and CORNERSPACING.
@@ -44,25 +46,56 @@ pub(super) fn generate(c: &Corpus<'_>) {
         (12, 360.0, None, 360.0, 450.0, 450.0),
         (13, 360.0, None, 360.0, 450.0, 450.0),
     ] {
-        metal(c, &Metal::new(n, true, w, len, s, Some((t, k))));
+        metal(c, &Metal::front(n, w, len, s, Some((t, k))));
     }
-    metal(c, &Metal::new(14, true, 1600.0, None, 1600.0, None));
+    metal(c, &Metal::front(14, 1600.0, None, 1600.0, None));
+    // The backside, the same way: BM1 along y, as M1.
+    for (n, w, s, t, k) in [
+        (1, 56.0, 56.0, 80.0, 66.0),
+        (2, 56.0, 56.0, 80.0, 66.0),
+        (3, 360.0, 360.0, 450.0, 450.0),
+        (4, 360.0, 360.0, 450.0, 450.0),
+    ] {
+        metal(
+            c,
+            &Metal::back(&format!("BM{n}"), n % 2 == 1, w, s, Some((t, k))),
+        );
+    }
+    metal(c, &Metal::back("BRDL", true, 1600.0, 1600.0, None));
     for v in [
-        Via::new(1, (14.0, 12.0), (4.0, 4.0), 18.0),
-        Via::new(2, (14.0, 12.0), (4.0, 4.0), 18.0),
-        Via::new(3, (14.0, 21.0), (4.0, 4.0), 18.0),
-        Via::new(4, (21.0, 21.0), (5.0, 5.0), 27.0),
-        Via::new(5, (21.0, 38.0), (6.0, 6.0), 27.0),
+        Via::front(1, (14.0, 12.0), (4.0, 4.0), 18.0),
+        Via::front(2, (14.0, 12.0), (4.0, 4.0), 18.0),
+        Via::front(3, (14.0, 21.0), (4.0, 4.0), 18.0),
+        Via::front(4, (21.0, 21.0), (5.0, 5.0), 27.0),
+        Via::front(5, (21.0, 38.0), (6.0, 6.0), 27.0),
         // gt2_tech.lef: the cut of each `V<n>_0` and `Via<n>Array`, the enclosures of
         // the metal along y and the one along x, and the cut layer's SPACING.
-        Via::new(6, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::new(7, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::new(8, (38.0, 38.0), (8.0, 8.0), 38.0),
-        Via::new(9, (38.0, 56.0), (10.0, 10.0), 38.0),
-        Via::new(10, (56.0, 56.0), (12.0, 12.0), 56.0),
-        Via::new(11, (56.0, 360.0), (12.0, 12.0), 56.0),
-        Via::new(12, (360.0, 360.0), (20.0, 20.0), 56.0),
-        Via::new(13, (360.0, 1600.0), (40.0, 200.0), 56.0),
+        Via::front(6, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(7, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(8, (38.0, 38.0), (8.0, 8.0), 38.0),
+        Via::front(9, (38.0, 56.0), (10.0, 10.0), 38.0),
+        Via::front(10, (56.0, 56.0), (12.0, 12.0), 56.0),
+        Via::front(11, (56.0, 360.0), (12.0, 12.0), 56.0),
+        Via::front(12, (360.0, 360.0), (20.0, 20.0), 56.0),
+        Via::front(13, (360.0, 1600.0), (40.0, 200.0), 56.0),
+    ] {
+        via(c, &v);
+    }
+    // The cut of each `BV<n>_0` and `BVia<n>Array`, the enclosures - `BVia<n>Array`'s -
+    // of the metal along y and the one along x, and the cut layer's SPACING.
+    for v in [
+        Via::back(0, ("BM1", "BPR"), false, (40.0, 32.0), (10.0, 10.0), 32.0),
+        Via::back(1, ("BM1", "BM2"), true, (56.0, 56.0), (12.0, 12.0), 56.0),
+        Via::back(2, ("BM3", "BM2"), false, (360.0, 56.0), (12.0, 12.0), 56.0),
+        Via::back(3, ("BM3", "BM4"), true, (360.0, 360.0), (20.0, 20.0), 56.0),
+        Via::back(
+            4,
+            ("BRDL", "BM4"),
+            false,
+            (1600.0, 360.0),
+            (200.0, 40.0),
+            56.0,
+        ),
     ] {
         via(c, &v);
     }
@@ -108,7 +141,10 @@ impl Frame {
 
 /// One metal level and its limits in nm.
 struct Metal {
-    n: u8,
+    name: String,
+    along_y: bool,
+    /// Whether its rules are the tech LEF's, their ids marked `.LEF`.
+    lef: bool,
     w: f64,
     /// `.2`, which the LEF gives only M7-M9.
     len: Option<f64>,
@@ -118,20 +154,40 @@ struct Metal {
 }
 
 impl Metal {
-    fn new(n: u8, lef: bool, w: f64, len: Option<f64>, s: f64, ends: Option<(f64, f64)>) -> Self {
-        assert_eq!(lef, from_lef(n, false), "M{n}");
-        Metal { n, w, len, s, ends }
+    /// Frontside metal `n`, along y when odd.
+    fn front(n: u8, w: f64, len: Option<f64>, s: f64, ends: Option<(f64, f64)>) -> Self {
+        Metal {
+            name: metal_name(n),
+            along_y: n % 2 == 1,
+            lef: from_lef(n, false),
+            w,
+            len,
+            s,
+            ends,
+        }
+    }
+
+    /// A backside metal, all of them the LEF's, none with a length.
+    fn back(name: &str, along_y: bool, w: f64, s: f64, ends: Option<(f64, f64)>) -> Self {
+        Metal {
+            name: name.to_string(),
+            along_y,
+            lef: true,
+            w,
+            len: None,
+            s,
+            ends,
+        }
     }
 
     fn id(&self, r: u8) -> String {
-        let lef = if from_lef(self.n, false) { ".LEF" } else { "" };
-        format!("{}.{r}{lef}", metal_name(self.n))
+        let lef = if self.lef { ".LEF" } else { "" };
+        format!("{}.{r}{lef}", self.name)
     }
 }
 
 fn metal(c: &Corpus<'_>, m: &Metal) {
-    let name = metal_name(m.n);
-    let deck = name.to_lowercase();
+    let deck = m.name.to_lowercase();
     let w = c.src(&m.id(1), "min_width", m.w);
     let len = m.len.map(|len| c.src(&m.id(2), "min_width", len));
     let s = c.src(&m.id(3), "min_space", m.s);
@@ -142,8 +198,8 @@ fn metal(c: &Corpus<'_>, m: &Metal) {
         (t, c.src(&m.id(5), "min_space", k))
     });
     let f = Frame {
-        layer: c.layer(&name),
-        along_y: m.n % 2 == 1,
+        layer: c.layer(&m.name),
+        along_y: m.along_y,
     };
     // Long past the width and the tip space, and rows apart past every space.
     let long = 300.0_f64.max(5.0 * w);
@@ -259,9 +315,14 @@ fn metal(c: &Corpus<'_>, m: &Metal) {
     write(6, "bent", elems);
 }
 
-/// One via level: Vn, from Mn to Mn+1.
+/// One via level: its cut, and the metal along y and the one along x it joins.
 struct Via {
-    n: u8,
+    cut: String,
+    my: String,
+    mx: String,
+    /// Whether the metal along y is the nearer the devices, `.7`'s; `.8` reads the other.
+    near_y: bool,
+    lef: bool,
     /// The via's least width across x and height across y.
     size: (f64, f64),
     /// What the metal along y and the metal along x run past it along their lengths.
@@ -271,40 +332,58 @@ struct Via {
 }
 
 impl Via {
-    fn new(n: u8, size: (f64, f64), en: (f64, f64), space: f64) -> Self {
-        Via { n, size, en, space }
+    /// Vn, from Mn to Mn+1, the odd one along y.
+    fn front(n: u8, size: (f64, f64), en: (f64, f64), space: f64) -> Self {
+        let (my, mx) = if n % 2 == 1 { (n, n + 1) } else { (n + 1, n) };
+        Via {
+            cut: format!("V{n}"),
+            my: metal_name(my),
+            mx: metal_name(mx),
+            near_y: my == n,
+            lef: from_lef(n, true),
+            size,
+            en,
+            space,
+        }
     }
 
-    fn lef(&self) -> bool {
-        from_lef(self.n, true)
-    }
-
-    /// The metal running along y (the odd one) and the one along x.
-    fn metals(&self) -> (u8, u8) {
-        if self.n % 2 == 1 {
-            (self.n, self.n + 1)
-        } else {
-            (self.n + 1, self.n)
+    /// BVn, joining the metals `(my, mx)` along y and x, all of them the LEF's.
+    fn back(
+        n: u8,
+        (my, mx): (&str, &str),
+        near_y: bool,
+        size: (f64, f64),
+        en: (f64, f64),
+        space: f64,
+    ) -> Self {
+        Via {
+            cut: format!("BV{n}"),
+            my: my.to_string(),
+            mx: mx.to_string(),
+            near_y,
+            lef: true,
+            size,
+            en,
+            space,
         }
     }
 
     fn id(&self, r: &str) -> String {
-        let lef = if self.lef() { ".LEF" } else { "" };
-        format!("V{}.{r}{lef}", self.n)
+        let lef = if self.lef { ".LEF" } else { "" };
+        format!("{}.{r}{lef}", self.cut)
     }
 }
 
 fn via(c: &Corpus<'_>, v: &Via) {
-    let deck = format!("v{}", v.n);
-    let (my, mx) = v.metals();
-    let (ny, nx) = (metal_name(my), metal_name(mx));
+    let deck = v.cut.to_lowercase();
+    let (ny, nx) = (&v.my, &v.mx);
     let wx = c.src(&v.id("1"), "min_width", v.size.0);
     let wy = c.src(&v.id("2"), "min_width", v.size.1);
     let en_y = c.src(&v.id(&format!("{ny}.EN")), "min_enclosure", v.en.0);
     let en_x = c.src(&v.id(&format!("{nx}.EN")), "min_enclosure", v.en.1);
-    let space_rule = if v.lef() { "5" } else { "6" };
+    let space_rule = if v.lef { "5" } else { "6" };
     let k = c.src(&v.id(space_rule), "min_space", v.space);
-    let (cut, ly, lx) = (c.layer(&format!("V{}", v.n)), c.layer(&ny), c.layer(&nx));
+    let (cut, ly, lx) = (c.layer(&v.cut), c.layer(ny), c.layer(nx));
     // Past both enclosures, and 20 nm where they are smaller.
     let run = 20.0_f64.max(en_y).max(en_x);
     let tall = wy + 2.0 * run;
@@ -343,7 +422,7 @@ fn via(c: &Corpus<'_>, v: &Via) {
         .collect();
     write("2", "narrow", elems);
 
-    if v.lef() {
+    if v.lef {
         // Two vias side by side across x, each in its own wire along y; the wires along
         // x, run out past the gap, merge.
         let mut rows = Rows::new(OFFSET);
@@ -409,16 +488,16 @@ fn via(c: &Corpus<'_>, v: &Via) {
     // the via's side - the left side for the metal along y, the bottom for the other -
     // which shares no area with it. The LEF's rules ask the via inside the metal, so
     // for them a third via has the metal a DBU aside, one wall out of it.
-    for (r, m) in [("7", v.n), ("8", v.n + 1)] {
+    for (r, near) in [("7", true), ("8", false)] {
         let mut rows = Rows::new(OFFSET);
         let mut elems = ok(OFFSET, rows.next(tall));
         let y = rows.next(tall);
         let y2 = rows.next(tall);
-        if m == my {
+        if near == v.near_y {
             elems.extend(stack(OFFSET, y, (wx, wy), None, full));
             elems.extend(stack(OFFSET, y2, (wx, wy), None, full));
             elems.push(bx(ly, OFFSET - wx, y2 - run, wx, tall));
-            if v.lef() {
+            if v.lef {
                 let y3 = rows.next(tall);
                 elems.extend(stack(OFFSET, y3, (wx, wy), None, full));
                 elems.push(bx(ly, OFFSET + DBU, y3 - run, wx, tall));
@@ -427,7 +506,7 @@ fn via(c: &Corpus<'_>, v: &Via) {
             elems.extend(stack(OFFSET, y, (wx, wy), full, None));
             elems.extend(stack(OFFSET, y2, (wx, wy), full, None));
             elems.push(bx(lx, OFFSET - run, y2 - wy, wx + 2.0 * run, wy));
-            if v.lef() {
+            if v.lef {
                 let y3 = rows.next(tall);
                 elems.extend(stack(OFFSET, y3, (wx, wy), full, None));
                 elems.push(bx(lx, OFFSET - run, y3 + DBU, wx + 2.0 * run, wy));

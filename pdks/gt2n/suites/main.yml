@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-# The full run: every deck, as gt2_main.drc.rs includes them, then V6 to RDL from the
-# tech LEF.
+# The full run: every deck, as gt2_main.drc.rs includes them, then V6 to RDL and the
+# backside from the tech LEF.
 include:
   - deck: bpr
   - deck: vbpr
@@ -45,3 +45,13 @@ include:
   - deck: m13
   - deck: v13
   - deck: rdl
+  - deck: bv0
+  - deck: bm1
+  - deck: bv1
+  - deck: bm2
+  - deck: bv2
+  - deck: bm3
+  - deck: bv3
+  - deck: bm4
+  - deck: bv4
+  - deck: brdl

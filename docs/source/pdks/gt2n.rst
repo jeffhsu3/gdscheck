@@ -18,8 +18,8 @@ default and has no layer).
 
 The PDK ``extends: gt3``. The decks that changed live under ``pdks/gt2n/decks/``,
 and the rest are GT3's files. The suites match GT3's: ``main``, ``feol`` and ``beol``.
-The runset stops at M6; ``main`` and ``beol`` go on to RDL with the decks below, from
-the technology LEF.
+The runset stops at M6 and checks none of the backside; ``main`` and ``beol`` go on to
+RDL, and a fourth suite, ``backside``, checks BV0 to BRDL, both from the technology LEF.
 
 Two of GT2N's own rules are read more closely than the runset does:
 
@@ -141,10 +141,11 @@ only through a declared via. The connect graph includes the whole stack, so
 ``SDCON.2`` applies its different-net spacing after following backside connections.
 Separate power rails remain separate unless geometry actually connects them.
 
-**BV0 through BRDL have connectivity support only.** The ``main`` suite includes
-all implemented checks, but does not check backside metal or via width, spacing,
-enclosure, routing grids or end-of-line constraints. The existing ``bpr`` and
-``vbpr`` decks still check the buried rail and its connection to SDCON.
+The runset checks none of the backside. The ``backside`` suite (also in ``main``)
+checks BV0 to BRDL from the technology LEF, read as the frontside above M6 is, with
+every id marked ``.LEF``. The ``bpr`` and ``vbpr`` decks check the buried rail and its
+connection to SDCON, from the runset; the LEF's BPR (32 nm wide, 112 nm apart, no
+bend) agrees with them.
 
 Backside rule sources
 ~~~~~~~~~~~~~~~~~~~~~
@@ -157,48 +158,111 @@ The audit uses GT2N revision ``699e2c10b2b494a120745515f59df8815f4f0175``:
   contain no checks for BV0, BM1–BM4, BV1–BV4 or BRDL.
 * The `technology LEF
   <https://github.com/azadnaeemi/GT2N/blob/699e2c10b2b494a120745515f59df8815f4f0175/techlib/gt2_tech.lef>`_
-  supplies routing and cut-layer declarations, fixed via templates and generated-via
-  enclosure constraints. These have not been translated into gdscheck decks.
+  supplies routing and cut-layer declarations, fixed via templates (``BV<n>_0``) and
+  via-array rules (``BVia<n>Array``). The decks are translated from these.
 
-The LEF's ``WIDTH`` and ``SPACING`` declarations are listed below in nm. This table
-records the source values; it is not a table of checks implemented by gdscheck.
+The metals take the frontside's values: BM1 and BM2 are M10 and M11's, BM3 and BM4 are
+M12 and M13's, and BRDL is RDL's. Values in nm:
 
 .. list-table::
    :header-rows: 1
 
-   * - Layers
-     - GDS layer / datatype
-     - WIDTH
-     - SPACING
-   * - BV0
-     - 910 / 0
-     - 32
-     - 32
+   * - Layer
+     - GDS layer
+     - Direction
+     - ``.1`` width
+     - ``.3`` space
+     - ``.4`` tip
+     - ``.5`` corner
    * - BM1, BM2
-     - 920 / 0, 940 / 0
+     - 920, 940
+     - vertical, horizontal
      - 56
      - 56
-   * - BV1–BV4
-     - 930 / 0, 950 / 0, 970 / 0, 990 / 0
-     - 56
-     - 56
+     - 80
+     - 66
    * - BM3, BM4
-     - 960 / 0, 980 / 0
+     - 960, 980
+     - vertical, horizontal
      - 360
      - 360
+     - 450
+     - 450
    * - BRDL
-     - 1000 / 0
+     - 1000
+     - vertical
      - 1600
      - 1600
+     - none
+     - none
 
-BM1–BM4 also carry ``LEF58_EOLKEEPOUT``, ``LEF58_CORNERSPACING`` and
-``LEF58_RECTONLY`` properties. The ``BVia0Array`` through ``BVia4Array`` generators
-specify directional enclosures and cut-array spacing. Fixed templates must be
-distinguished from general rules: for example, ``BV0_0`` gives BPR a 1 nm horizontal
-margin around its cut, while ``BVia0Array`` asks for 10 nm. Also, ``BV4_0`` draws a
-1600 × 360 nm cut despite BV4's 56 nm ``WIDTH`` declaration. An eventual backside
-geometry deck needs to resolve these semantics and template differences explicitly;
-the frontside metal and via limits are not substituted for them.
+None has a ``MINSIZE``, so none has a ``.2``. BRDL has no ``RECTONLY``, and its
+``.3`` is read every way.
+
+A via is read as V6 to V13 are: its template's cut (``.1``, ``.2``), the cut layer's
+``SPACING`` read every way (``.5``), the cut inside the metal nearer the devices
+(``.7``) and the farther one (``.8``), and each metal's enclosure along its length
+from the array rule (``BV<n>.<metal>.EN.LEF``):
+
+.. list-table::
+   :header-rows: 1
+
+   * - Via
+     - GDS layer
+     - Joins
+     - Cut
+     - ``.5`` space
+     - Enclosure
+   * - BV0
+     - 910
+     - BPR, BM1
+     - 40 × 32
+     - 32
+     - 10 by BPR, 10 by BM1
+   * - BV1
+     - 930
+     - BM1, BM2
+     - 56 × 56
+     - 56
+     - 12, 12
+   * - BV2
+     - 950
+     - BM2, BM3
+     - 360 × 56
+     - 56
+     - 12, 12
+   * - BV3
+     - 970
+     - BM3, BM4
+     - 360 × 360
+     - 56
+     - 20, 20
+   * - BV4
+     - 990
+     - BM4, BRDL
+     - 1600 × 360
+     - 56
+     - 40 by BM4, 200 by BRDL
+
+Where a template and its array rule disagree, the array rule's enclosure is read. That
+is what OpenROAD generates the power network's vias from:
+
+* ``BV0_0`` runs BPR 1 nm past its cut; ``BVia0Array`` asks for 10 nm. The routed
+  ``gt2n/aes`` below draws every BV0 from ``BVia0Array``, at 10 nm.
+* ``BV2_0`` draws its BM2 as 80 × 384 nm, which does not cover its 360 nm-wide cut:
+  it looks like the frontside ``V11_0``'s M11 with one value changed. ``BVia2Array``
+  runs BM2 12 nm past the cut along its length, and a ``BV2_0`` drawn as the template
+  stands fails ``BV2.8.LEF`` and ``BV2.BM2.EN.LEF``.
+
+The cut-layer ``WIDTH`` gives way to the template's cut, as on the frontside: BV0's
+cut is 40 nm across x against a 32 nm ``WIDTH``, and BV2 to BV4's cuts are 360 or
+1600 nm against 56. Each array rule's ``SPACING`` is a cut pitch no wider than the cut,
+so it says nothing about a gap.
+
+OpenROAD-flow-scripts' routed ``gt2n/aes`` draws its power network on the backside:
+16,569 BV0s, 6,447 BM1 shapes, 7,056 BV1s and 924 BM2 shapes. The ``backside``
+suite reports nothing on it. Nothing in it reaches BV2 or beyond, so those decks are
+tested only by their generated patterns.
 
 
 Tests
@@ -245,5 +309,5 @@ exercise two SDCONs joined only through the entire backside stack. Removing each
 via in turn, on either branch, must disconnect the contacts and make ``SDCON.2``
 report their 19 nm gap. These cases run across 7 µm and 20 µm tile boundaries.
 Additional tests keep separate power rails apart and check two BM1 rails crossed
-by BM2 with zero, one or two BV1s. The synthetic pads test connectivity, not
-compliance with the LEF geometry declarations above.
+by BM2 with zero, one or two BV1s. The synthetic pads test connectivity, and run only
+the ``sdcon`` deck: they do not meet the backside decks' rules.

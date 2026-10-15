@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2026 aesc silicon
+#
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# The backside stack, from the buried power rail down to BRDL, from the tech LEF.
+# BPR itself is the runset's, in feol.
+include:
+  - deck: bv0
+  - deck: bm1
+  - deck: bv1
+  - deck: bm2
+  - deck: bv2
+  - deck: bm3
+  - deck: bv3
+  - deck: bm4
+  - deck: bv4
+  - deck: brdl

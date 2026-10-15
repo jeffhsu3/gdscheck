@@ -207,7 +207,7 @@ fn crossing_backside_metals_only_connect_where_a_via_is_present(#[case] vias: us
 }
 
 #[test]
-fn the_feol_and_beol_suites_split_main() {
+fn the_feol_beol_and_backside_suites_split_main() {
     let pdk = PdkConfig::for_process("gt2n").expect("PDK loads");
     let ids = |suite: &str| -> BTreeSet<String> {
         pdk.load_suite(suite)
@@ -219,10 +219,12 @@ fn the_feol_and_beol_suites_split_main() {
             })
             .collect()
     };
-    let (main, feol, beol) = (ids("main"), ids("feol"), ids("beol"));
+    let (main, feol, beol, back) = (ids("main"), ids("feol"), ids("beol"), ids("backside"));
     assert!(feol.is_disjoint(&beol), "a rule in both feol and beol");
-    let both: BTreeSet<String> = feol.union(&beol).cloned().collect();
-    assert_eq!(main, both);
+    assert!(feol.is_disjoint(&back), "a rule in both feol and backside");
+    assert!(beol.is_disjoint(&back), "a rule in both beol and backside");
+    let all: BTreeSet<String> = feol.union(&beol).chain(&back).cloned().collect();
+    assert_eq!(main, all);
 }
 
 // --- Generated patterns ---
@@ -541,6 +543,56 @@ fn via_lef(#[values(6, 7, 8, 9, 10, 11, 12, 13)] n: u8) {
         (id("8"), "off", 3),
         (id(&format!("{}.EN", name(n))), "enc", 2),
         (id(&format!("{}.EN", name(n + 1))), "enc", 2),
+    ] {
+        pattern(&deck, &r, variant, count, &[]);
+    }
+}
+
+/// The backside, from the tech LEF, as the frontside above M6 reads: BM1-BM4 without a
+/// `.2`, BRDL with a width and a space read every way, and each via as V6-V13.
+#[rstest]
+fn backside_lef(#[values(1, 2, 3, 4)] n: u8) {
+    let deck = format!("bm{n}");
+    let id = |r: u8| format!("BM{n}.{r}.LEF");
+    for (r, variant, count) in [
+        (1, "narrow", 2),
+        (3, "close", 1),
+        (3, "notch", 1),
+        (4, "close", 1),
+        (4, "notch", 1),
+        (5, "corner", 1),
+        (6, "bent", 1),
+    ] {
+        let bend = id(6);
+        let ignore: &[&str] = if variant == "notch" { &[&bend] } else { &[] };
+        pattern(&deck, &id(r), variant, count, ignore);
+    }
+}
+
+#[test]
+fn brdl_lef() {
+    pattern("brdl", "BRDL.1.LEF", "narrow", 2, &[]);
+    pattern("brdl", "BRDL.3.LEF", "close", 1, &[]);
+    pattern("brdl", "BRDL.3.LEF", "notch", 1, &[]);
+}
+
+#[rstest]
+#[case(0, "BPR", "BM1")]
+#[case(1, "BM1", "BM2")]
+#[case(2, "BM2", "BM3")]
+#[case(3, "BM3", "BM4")]
+#[case(4, "BM4", "BRDL")]
+fn backside_via_lef(#[case] n: u8, #[case] near: &str, #[case] far: &str) {
+    let deck = format!("bv{n}");
+    let id = |r: &str| format!("BV{n}.{r}.LEF");
+    for (r, variant, count) in [
+        (id("1"), "narrow", 2),
+        (id("2"), "narrow", 2),
+        (id("5"), "close", 1),
+        (id("7"), "off", 3),
+        (id("8"), "off", 3),
+        (id(&format!("{near}.EN")), "enc", 2),
+        (id(&format!("{far}.EN")), "enc", 2),
     ] {
         pattern(&deck, &r, variant, count, &[]);
     }
