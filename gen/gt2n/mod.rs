@@ -6,7 +6,8 @@
 //!
 //! Each family writes good/bad GDS fixtures under `tests/data/gt2n/generated/<deck>/`.
 //! Expectations live in `tests/gt2n.rs`. Limits come from GT2N's IC Validator runset
-//! (`icv_runset/Include/gt2.*.drc.rs`); the generator checks the decks against them,
+//! (`icv_runset/Include/gt2.*.drc.rs`), and above M6, where the runset stops, from its
+//! technology LEF (`techlib/gt2_tech.lef`); the generator checks the decks against them,
 //! so a value changed in a deck - GT2N's own or one it shares with GT3 - stops it.
 
 mod beol;
@@ -55,20 +56,26 @@ fn pg(layer: (i16, i16), pts: &[(f64, f64)]) -> GdsElement {
     poly(layer, &pts)
 }
 
-/// Rows of a pattern, stacked upward from `y` with [`ROOM`] between them.
+/// Rows of a pattern, stacked upward from `y` with [`ROOM`] between them, or more for
+/// a layer whose spacing is wider.
 struct Rows {
     y: f64,
+    room: f64,
 }
 
 impl Rows {
     fn new(y: f64) -> Self {
-        Rows { y }
+        Rows::spaced(y, ROOM)
+    }
+
+    fn spaced(y: f64, room: f64) -> Self {
+        Rows { y, room }
     }
 
     /// The bottom of a row `h` tall, the next row starting above it.
     fn next(&mut self, h: f64) -> f64 {
         let y = self.y;
-        self.y += h + ROOM;
+        self.y += h + self.room;
         y
     }
 }
@@ -79,8 +86,8 @@ struct Corpus<'a> {
 }
 
 impl Corpus<'_> {
-    /// The runset's `nm` for rule `id`, after checking every `check` entry of it in the
-    /// deck says the same.
+    /// The source's `nm` for rule `id` - the runset's, or for a `.LEF` rule the tech
+    /// LEF's - after checking every `check` entry of it in the deck says the same.
     fn src(&self, id: &str, check: &str, nm: f64) -> f64 {
         let found: Vec<_> = self
             .rules
@@ -91,7 +98,7 @@ impl Corpus<'_> {
         for r in found {
             assert!(
                 (r.value * 1000.0 - nm).abs() < 1e-6,
-                "{id} {check}: deck value is {} nm, the runset says {nm} nm",
+                "{id} {check}: deck value is {} nm, the source says {nm} nm",
                 r.value * 1000.0
             );
         }

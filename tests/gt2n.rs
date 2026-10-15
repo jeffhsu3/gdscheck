@@ -14,7 +14,8 @@
 //! 13 nm sheets, gt2_6t_decapcc draws two VGs 5 nm from an active, under VG.ACT.1's 6.
 //!
 //! Every rule also has a generated pattern (`gen/gt2n`) under
-//! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values.
+//! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values, and above M6,
+//! where the runset stops, to the tech LEF's.
 
 use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsUnits};
 use gdscheck::run_drc;
@@ -483,5 +484,64 @@ fn beol(#[values(1, 2, 3, 4, 5, 6)] n: u8) {
     ] {
         let ignore: Vec<&str> = ignore.iter().map(String::as_str).collect();
         pattern(&deck, &r, variant, count, &ignore);
+    }
+}
+
+/// The routing stack above M6, from the tech LEF: M6's rules on each metal, without the
+/// `.2` the LEF gives M10-M13 no MINSIZE for, and RDL with only a width and a space read
+/// every way. A via has its `.5` space, read every way, two vias side by side a DBU too
+/// close giving one; and `.7` and `.8` ask it inside each metal, so a metal missing,
+/// abutting it, or a DBU aside give one each.
+#[rstest]
+fn beol_lef(#[values(7, 8, 9, 10, 11, 12, 13)] n: u8) {
+    let deck = format!("m{n}");
+    let id = |r: u8| format!("M{n}.{r}.LEF");
+    for (r, variant, count) in [
+        (1, "narrow", 2),
+        (2, "short", 2),
+        (3, "close", 1),
+        (3, "notch", 1),
+        (4, "close", 1),
+        (4, "notch", 1),
+        (5, "corner", 1),
+        (6, "bent", 1),
+    ] {
+        if r == 2 && n >= 10 {
+            continue;
+        }
+        let bend = id(6);
+        let ignore: &[&str] = if variant == "notch" { &[&bend] } else { &[] };
+        pattern(&deck, &id(r), variant, count, ignore);
+    }
+}
+
+#[test]
+fn rdl_lef() {
+    pattern("rdl", "RDL.1.LEF", "narrow", 2, &[]);
+    pattern("rdl", "RDL.3.LEF", "close", 1, &[]);
+    pattern("rdl", "RDL.3.LEF", "notch", 1, &[]);
+}
+
+#[rstest]
+fn via_lef(#[values(6, 7, 8, 9, 10, 11, 12, 13)] n: u8) {
+    let name = |m: u8| {
+        if m == 14 {
+            "RDL".to_string()
+        } else {
+            format!("M{m}")
+        }
+    };
+    let deck = format!("v{n}");
+    let id = |r: &str| format!("V{n}.{r}.LEF");
+    for (r, variant, count) in [
+        (id("1"), "narrow", 2),
+        (id("2"), "narrow", 2),
+        (id("5"), "close", 1),
+        (id("7"), "off", 3),
+        (id("8"), "off", 3),
+        (id(&format!("{}.EN", name(n))), "enc", 2),
+        (id(&format!("{}.EN", name(n + 1))), "enc", 2),
+    ] {
+        pattern(&deck, &r, variant, count, &[]);
     }
 }
