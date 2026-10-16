@@ -387,12 +387,15 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 /// off the via, or a DBU wider each side, leaves two walls off it, and a jogged via
 /// lies off both wires' outlines. SDCON.2 reads two
 /// contacts on different nets: the pair joined through VSD and M0 does not count.
+/// VG.6.LEF and VSD.6.LEF, the tech LEF's cut-layer SPACING, read two contacts side by
+/// side a DBU too close as one.
 #[rstest]
 #[case("vg", "VG.1", "narrow", 4)]
 #[case("vg", "VG.2", "narrow", 4)]
 #[case("vg", "VG.3", "cut", 3)]
 #[case("vg", "VG.4", "alone", 2)]
 #[case("vg", "VG.5", "outside", 2)]
+#[case("vg", "VG.6.LEF", "close", 1)]
 #[case("vg", "VG.7", "bent", 1)]
 #[case("vg", "VG.M0.1", "outside", 2)]
 #[case("vg", "VG.M0.2", "enc", 2)]
@@ -408,6 +411,7 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 #[case("vsd", "VSD.3", "bent", 1)]
 #[case("vsd", "VSD.4", "outside", 2)]
 #[case("vsd", "VSD.5", "outside", 2)]
+#[case("vsd", "VSD.6.LEF", "close", 1)]
 #[case("vsd", "VSD.SDCON.1", "enc", 2)]
 #[case("vsd", "VSD.M0.1", "enc", 2)]
 #[case("m0", "M0.1", "narrow", 4)]
@@ -447,7 +451,9 @@ fn mol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] co
 /// The routing stack: every metal and via level drawn by one builder. A notch needs a
 /// wire that bends, which `.6` also reads. A via off its metal has a wall off it too,
 /// which `.3` (the metal along y) or `.4` (along x) also reads. A metal a DBU off
-/// its via, or a DBU wider each side, leaves two of its walls off the outline.
+/// its via, or a DBU wider each side, leaves two of its walls off the outline. Each via
+/// also has the tech LEF's cut-layer SPACING, `.5.LEF`, read every way: two vias side by
+/// side a DBU too close give one.
 #[rstest]
 fn beol(#[values(1, 2, 3, 4, 5, 6)] n: u8) {
     let deck = format!("m{n}");
@@ -478,6 +484,7 @@ fn beol(#[values(1, 2, 3, 4, 5, 6)] n: u8) {
         (id("2"), "narrow", 2, None),
         (id("3"), "align", 4, None),
         (id("4"), "align", 4, None),
+        (format!("V{n}.5.LEF"), "close", 1, None),
         (id("6"), "corner", 1, None),
         (id("7"), "off", 2, Some(edge_rule(n))),
         (id("8"), "off", 2, Some(edge_rule(n + 1))),

@@ -65,7 +65,7 @@ decks:
     path: decks/sdcon.yml
     description: Source/drain contact
   - name: vsd
-    path: ../gt3/decks/vsd.yml
+    path: decks/vsd.yml
     description: Via SDCON to M0
   - name: m0
     path: ../gt3/decks/m0.yml
@@ -77,31 +77,31 @@ decks:
     path: ../gt3/decks/m1.yml
     description: Metal 1
   - name: v1
-    path: ../gt3/decks/v1.yml
+    path: decks/v1.yml
     description: Via 1
   - name: m2
     path: ../gt3/decks/m2.yml
     description: Metal 2
   - name: v2
-    path: ../gt3/decks/v2.yml
+    path: decks/v2.yml
     description: Via 2
   - name: m3
     path: ../gt3/decks/m3.yml
     description: Metal 3
   - name: v3
-    path: ../gt3/decks/v3.yml
+    path: decks/v3.yml
     description: Via 3
   - name: m4
     path: ../gt3/decks/m4.yml
     description: Metal 4
   - name: v4
-    path: ../gt3/decks/v4.yml
+    path: decks/v4.yml
     description: Via 4
   - name: m5
     path: ../gt3/decks/m5.yml
     description: Metal 5
   - name: v5
-    path: ../gt3/decks/v5.yml
+    path: decks/v5.yml
     description: Via 5
   - name: m6
     path: ../gt3/decks/m6.yml

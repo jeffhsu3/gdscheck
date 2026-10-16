@@ -149,6 +149,17 @@ fn vg(c: &Corpus<'_>) {
     elems.push(bx(m0, OFFSET - en, y + tall / 2.0, w + 2.0 * en, h));
     c.write("vg", "VG.5.outside", true, elems);
 
+    // Two contacts side by side across x, each on its own gate, `gap` apart.
+    let s = c.src("VG.6.LEF", "min_space", 28.0);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.extend(ok(OFFSET + w + gap, y));
+    }
+    c.write("vg", "VG.6.LEF.close", true, elems);
+
     // A contact jogged a DBU, in a gate and an M0 wide enough to hold it.
     let mut rows = Rows::new(OFFSET);
     let mut elems = ok(OFFSET, rows.next(tall));
@@ -352,6 +363,17 @@ fn vsd(c: &Corpus<'_>) {
     elems.pop();
     elems.push(bx(m0, OFFSET - en_m0, y + DBU, w + 2.0 * en_m0, h));
     c.write("vsd", "VSD.5.outside", true, elems);
+
+    // Two vias side by side across x, each in its own SDCON and M0, `gap` apart.
+    let s = c.src("VSD.6.LEF", "min_space", 29.0);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.extend(ok(OFFSET + w + gap, y));
+    }
+    c.write("vsd", "VSD.6.LEF.close", true, elems);
 
     // The SDCON's 3 nm to spare split 1.5 and 1.5, 1 and 2, then 0.5 and 2.5 each way.
     let mut rows = Rows::new(OFFSET);

@@ -15,6 +15,9 @@
 //! as the LEF's frontside does, BPR being the runset's: BM1-BM4 have no `.2`, BRDL only
 //! `.1` and `.3`.
 //!
+//! V1-V5 also take the LEF's cut-layer SPACING, which the runset numbers `.5` and leaves
+//! unchecked, as `.5.LEF`, drawn as the LEF's vias' `.5` is.
+//!
 //! A via is flush with the metal running along y across x, and with the one running
 //! along x across y, as V*.3 and V*.4 ask; each metal runs past it along its length,
 //! as the two enclosure rules ask.
@@ -63,11 +66,11 @@ pub(super) fn generate(c: &Corpus<'_>) {
     }
     metal(c, &Metal::back("BRDL", true, 1600.0, 1600.0, None));
     for v in [
-        Via::front(1, (14.0, 12.0), (4.0, 4.0), 18.0),
-        Via::front(2, (14.0, 12.0), (4.0, 4.0), 18.0),
-        Via::front(3, (14.0, 21.0), (4.0, 4.0), 18.0),
-        Via::front(4, (21.0, 21.0), (5.0, 5.0), 27.0),
-        Via::front(5, (21.0, 38.0), (6.0, 6.0), 27.0),
+        Via::front(1, (14.0, 12.0), (4.0, 4.0), 18.0).lef_space(12.0),
+        Via::front(2, (14.0, 12.0), (4.0, 4.0), 18.0).lef_space(12.0),
+        Via::front(3, (14.0, 21.0), (4.0, 4.0), 18.0).lef_space(14.0),
+        Via::front(4, (21.0, 21.0), (5.0, 5.0), 27.0).lef_space(21.0),
+        Via::front(5, (21.0, 38.0), (6.0, 6.0), 27.0).lef_space(21.0),
         // gt2_tech.lef: the cut of each `V<n>_0` and `Via<n>Array`, the enclosures of
         // the metal along y and the one along x, and the cut layer's SPACING.
         Via::front(6, (38.0, 38.0), (8.0, 8.0), 38.0),
@@ -329,6 +332,8 @@ struct Via {
     en: (f64, f64),
     /// The runset's `.6` corner space, or the LEF's `.5` space read every way.
     space: f64,
+    /// For the runset's vias, the LEF's cut-layer SPACING, `.5.LEF`.
+    lef_space: Option<f64>,
 }
 
 impl Via {
@@ -344,6 +349,7 @@ impl Via {
             size,
             en,
             space,
+            lef_space: None,
         }
     }
 
@@ -365,6 +371,15 @@ impl Via {
             size,
             en,
             space,
+            lef_space: None,
+        }
+    }
+
+    /// The LEF's cut-layer SPACING, on top of the runset's rules.
+    fn lef_space(self, s: f64) -> Self {
+        Via {
+            lef_space: Some(s),
+            ..self
         }
     }
 
@@ -383,6 +398,16 @@ fn via(c: &Corpus<'_>, v: &Via) {
     let en_x = c.src(&v.id(&format!("{nx}.EN")), "min_enclosure", v.en.1);
     let space_rule = if v.lef { "5" } else { "6" };
     let k = c.src(&v.id(space_rule), "min_space", v.space);
+    // The `.5` space read every way: the LEF's own, or its SPACING on a runset via.
+    let close = if v.lef {
+        Some((v.id("5"), k))
+    } else {
+        v.lef_space.map(|s| {
+            let id = format!("{}.5.LEF", v.cut);
+            let k = c.src(&id, "min_space", s);
+            (id, k)
+        })
+    };
     let (cut, ly, lx) = (c.layer(&v.cut), c.layer(ny), c.layer(nx));
     // Past both enclosures, and 20 nm where they are smaller.
     let run = 20.0_f64.max(en_y).max(en_x);
@@ -422,7 +447,7 @@ fn via(c: &Corpus<'_>, v: &Via) {
         .collect();
     write("2", "narrow", elems);
 
-    if v.lef {
+    if let Some((id, k)) = close {
         // Two vias side by side across x, each in its own wire along y; the wires along
         // x, run out past the gap, merge.
         let mut rows = Rows::new(OFFSET);
@@ -432,8 +457,9 @@ fn via(c: &Corpus<'_>, v: &Via) {
             elems.extend(ok(OFFSET, y));
             elems.extend(ok(OFFSET + wx + gap, y));
         }
-        write("5", "close", elems);
-    } else {
+        c.write(&deck, &format!("{id}.close"), true, elems);
+    }
+    if !v.lef {
         // A via whose metal along y sits a DBU to the right: one vertical wall lies
         // outside it and the other inside it, both off its outline; then one whose metal
         // is a DBU wider each side, both walls inside it.

@@ -127,6 +127,47 @@ Run over OpenROAD-flow-scripts' routed ``gt2n/aes``, which routes up to M9, thes
 decks report nothing.
 
 
+Below V6: the LEF's cut spacing
+-------------------------------
+
+The runset names a spacing for V1 to V5 (``V<n>.5``) and for VG (``VG.6``) but checks
+neither, and it has no spacing for VSD. The tech LEF gives each of these cut layers a
+``SPACING``, which ``V<n>.5.LEF``, ``VG.6.LEF`` and ``VSD.6.LEF`` read every way, as
+``.5`` does above M6. For this, ``v1`` to ``v5`` and ``vsd`` are GT2N's own copies of
+GT3's decks, with the one rule added. Values in nm:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Cut
+     - V1
+     - V2
+     - V3
+     - V4
+     - V5
+     - VG
+     - VSD
+   * - ``SPACING``
+     - 12
+     - 12
+     - 14
+     - 21
+     - 21
+     - 28
+     - 29
+
+Everything else the LEF states for M0 to M6 and V0 to V5, the runset already checks at
+the same values: each metal's width, length (``MINSIZE`` and ``AREA``), spacing,
+tip-to-tip space (``LEF58_EOLKEEPOUT``), corner spacing and no bend, and each via's
+``ENCLOSURE`` along its metals (``V<n>.M<k>.EN``). M6's length is the one difference,
+covered above. V0 is left as the runset has it. The runset gives two V0s on one M0
+track 14 nm, under a second ``V0.7`` that it never checks, and the LEF's 12 nm adds
+nothing to that.
+
+The ten standard-cell libraries and the routed ``gt2n/aes`` read clean under these
+rules.
+
+
 Backside power
 --------------
 
