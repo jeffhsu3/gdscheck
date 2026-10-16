@@ -10,8 +10,10 @@
 //! - the 31 nm sheets, and the ELVT, ULVT, HVT and LVT flavours - read the same.
 //!
 //! The violations the run reports are the library's own: gt2_6t_mux2_x1 lands a V0
-//! flush on the end of its M1, under V0.M1.1's 4 nm, in every flavour; and on the
-//! 13 nm sheets, gt2_6t_decapcc draws two VGs 5 nm from an active, under VG.ACT.1's 6.
+//! flush on the end of its M1, under V0.M1.1's 4 nm, in every flavour; on the 13 nm
+//! sheets, gt2_6t_decapcc draws two VGs 5 nm from an active, under VG.ACT.1's 6; and on
+//! the 31 nm sheets, VG.ACT.1a finds gt2_6t_decapcc's two VGs 4 nm over an active and
+//! one of gt2_6t_mux2_x1's 1.5 nm over (GT2N issue #22).
 //!
 //! Every rule also has a generated pattern (`gen/gt2n`) under
 //! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values, and above M6,
