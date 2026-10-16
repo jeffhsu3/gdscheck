@@ -587,6 +587,21 @@ fn v0(c: &Corpus<'_>) {
     }
     c.write("v0", "V0.6.corner", true, elems);
 
+    // Two vias on one M0 track, `gap` apart across x, each in its own M1; then two on
+    // adjacent tracks, one above the other at M0.3's 12 nm, which V0.7a leaves alone.
+    let s = c.src("V0.7a", "min_space", 14.0);
+    let mut rows = Rows::new(OFFSET);
+    let mut elems = vec![];
+    for gap in [s, s - DBU] {
+        let y = rows.next(tall);
+        elems.extend(ok(OFFSET, y));
+        elems.extend(ok(OFFSET + w + gap, y));
+    }
+    let y = rows.next(tall);
+    elems.extend(ok(OFFSET, y));
+    elems.extend(ok(OFFSET, y + h + 12.0));
+    c.write("v0", "V0.7a.close", true, elems);
+
     let mut rows = Rows::new(OFFSET);
     let elems = [(en0, en0), (en0 - DBU, en0), (en0, en0 - DBU)]
         .into_iter()

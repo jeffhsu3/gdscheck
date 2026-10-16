@@ -71,7 +71,7 @@ decks:
     path: ../gt3/decks/m0.yml
     description: Metal 0
   - name: v0
-    path: ../gt3/decks/v0.yml
+    path: decks/v0.yml
     description: Via 0
   - name: m1
     path: ../gt3/decks/m1.yml

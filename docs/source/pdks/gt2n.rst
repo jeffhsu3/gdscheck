@@ -160,9 +160,10 @@ Everything else the LEF states for M0 to M6 and V0 to V5, the runset already che
 the same values: each metal's width, length (``MINSIZE`` and ``AREA``), spacing,
 tip-to-tip space (``LEF58_EOLKEEPOUT``), corner spacing and no bend, and each via's
 ``ENCLOSURE`` along its metals (``V<n>.M<k>.EN``). M6's length is the one difference,
-covered above. V0 is left as the runset has it. The runset gives two V0s on one M0
-track 14 nm, under a second ``V0.7`` that it never checks, and the LEF's 12 nm adds
-nothing to that.
+covered above. For V0 the runset gives two V0s on one M0 track 14 nm, under a second
+``V0.7`` that it never checks. ``V0.7a`` checks it, in GT2N's own copy of ``v0``,
+across x only: M0 is one V0 tall, so V0s on adjacent tracks never share a y. The LEF's
+12 nm adds nothing to that.
 
 The ten standard-cell libraries and the routed ``gt2n/aes`` read clean under these
 rules.

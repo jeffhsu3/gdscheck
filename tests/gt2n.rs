@@ -390,7 +390,8 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 /// lies off both wires' outlines. SDCON.2 reads two
 /// contacts on different nets: the pair joined through VSD and M0 does not count.
 /// VG.6.LEF and VSD.6.LEF, the tech LEF's cut-layer SPACING, read two contacts side by
-/// side a DBU too close as one.
+/// side a DBU too close as one; V0.7a reads two V0s on one M0 track the same way, and
+/// not two on adjacent tracks, one above the other.
 #[rstest]
 #[case("vg", "VG.1", "narrow", 4)]
 #[case("vg", "VG.2", "narrow", 4)]
@@ -431,6 +432,7 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 #[case("v0", "V0.5", "outside", 2)]
 #[case("v0", "V0.6", "corner", 1)]
 #[case("v0", "V0.7", "align", 4)]
+#[case("v0", "V0.7a", "close", 1)]
 #[case("v0", "V0.8", "align", 4)]
 #[case("v0", "V0.M0.1", "enc", 2)]
 #[case("v0", "V0.M1.1", "enc", 2)]
