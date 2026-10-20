@@ -20,6 +20,7 @@ The PDK ``extends: gt3``. The decks that changed live under ``pdks/gt2n/decks/``
 and the rest are GT3's files. The suites match GT3's: ``main``, ``feol`` and ``beol``.
 The runset stops at M6 and checks none of the backside; ``main`` and ``beol`` go on to
 RDL, and a fourth suite, ``backside``, checks BV0 to BRDL, both from the technology LEF.
+The technology file supplies additional well and minimum-area constraints.
 
 Two of GT2N's own rules are read more closely than the runset does:
 
@@ -32,6 +33,103 @@ Two of GT2N's own rules are read more closely than the runset does:
   missing gate, which ``gt2_6t_filler`` closes.
 * ACT.6 requires every part of an active's end to lie in a DUMMY. The runset reports
   only an end that touches no DUMMY at all.
+
+
+Manufacturing grid
+------------------
+
+The technology LEF's ``MANUFACTURINGGRID 0.0005`` requires a 0.5 nm grid. The
+``offgrid`` deck checks both coordinates of the merged geometry on all 56 drawing
+layers, including NWELL, the five threshold-voltage layers and the backside stack.
+Pin annotations are excluded. Each off-grid vertex produces a point marker under
+``FEOL.offgrid.LEF``, ``BEOL.offgrid.LEF`` or ``BACKSIDE.offgrid.LEF``.
+
+``main`` includes all three rules; ``feol``, ``beol`` and ``backside`` include only
+their own group. ``--deck offgrid`` runs just the manufacturing-grid checks. This
+is separate from ``GATE.2``'s gate-centre pitch. The generated grid fixtures use a
+0.25 nm database unit to preserve off-grid coordinates, and exercise every drawing
+layer with passing shapes and offsets in x, y and both coordinates.
+
+
+Technology-file constraints
+---------------------------
+
+The ``techfile`` deck adds constraints from the ``foundry/spacings`` section of
+`techlib/gt2_techfile.tf
+<https://github.com/azadnaeemi/GT2N/blob/699e2c10b2b494a120745515f59df8815f4f0175/techlib/gt2_techfile.tf>`_,
+at the same revision as the LEF audit. Its 15 rule IDs end in ``.TF``. NWELL has a
+42 nm minimum width in every direction (``NWELL.width.TF``), and a 42 nm minimum
+spacing between regions and across notches (``NWELL.space.TF``). Each layer below
+also has a ``<layer>.area.TF`` rule:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Layers
+     - Minimum area (µm²)
+     - Suite
+   * - NWELL
+     - 0.003024
+     - feol
+   * - ACT
+     - 0.000420
+     - feol
+   * - BPR
+     - 0.000100
+     - feol
+   * - M10, M11
+     - 0.004480
+     - beol
+   * - M12, M13
+     - 0.194400
+     - beol
+   * - RDL
+     - 3.840000
+     - beol
+   * - BM1, BM2
+     - 0.004480
+     - backside
+   * - BM3, BM4
+     - 0.194400
+     - backside
+   * - BRDL
+     - 3.840000
+     - backside
+
+Areas are measured on each merged region, subtracting holes. Overlapping or
+abutting pieces contribute to the same region; separate islands each have to meet
+the limit. These are area limits, not fixed minimum lengths: a wider wire may be
+shorter. ``main`` includes all 15 rules, and the other suites include only their
+own layers. ``--deck techfile`` runs these additional checks alone.
+
+The three sources do not fully agree. The IC Validator runset takes precedence
+where it defines a rule, followed by the LEF; the technology file fills gaps:
+
+* The technology file's ACT width is 10 nm, versus the runset's 8 nm. Its GATE width
+  and spacing are 15 and 27 nm, versus 14 and 28 nm. Keep the runset's dimensions
+  and directional spacing checks.
+* The technology file's GATE area of 0.006 µm² would reject every merged gate in
+  the 13 nm SVT library when its cells are checked individually (areas 0.002016 to
+  0.004032 µm²). It is not enabled. The runset has no gate-length check.
+* M9's area is 0.002204 µm² in the technology file, versus the LEF's 0.002166 µm²
+  and 38 × 57 nm ``MINSIZE``. Keep the LEF's limit.
+* M0–M3's technology-file areas equal the existing width × length limits. M4–M8's
+  are smaller than those limits. They add no restriction to the rectangles those
+  decks require. ACT's explicit area is retained even though ordinary rectangles
+  meeting its width and length already exceed it.
+* The remaining width and spacing entries duplicate or are weaker than existing
+  ICV/LEF values. Their directional interpretations and via-template dimensions
+  remain authoritative. For example, the technology file's V3 width and spacing
+  are 12 nm, versus 14 nm in the LEF; even its route-spec section uses 14 nm.
+
+The manufacturing grid is already checked by ``offgrid``. Routing pitches and
+offsets describe routing tracks and are not additional geometry checks; via
+templates remain governed by the LEF reconciliation below.
+
+All 72 cells in each of the ten standard-cell libraries, checked as separate
+instances, pass these additional constraints. The routed ``gt2n/aes`` design also
+passes the ``techfile`` deck. Its routing stops at M9 and BM2, so the higher layers
+are covered by generated fixtures.
 
 
 Above M6: the tech LEF
@@ -96,7 +194,8 @@ Values in nm:
      - none
      - none
 
-M10 to M13 have no ``MINSIZE`` or ``AREA``, so no ``.2``. RDL has only a ``WIDTH`` and
+M10 to M13 have no LEF ``MINSIZE`` or ``AREA``, so no ``.2``; their areas are checked
+by ``techfile`` above. RDL has only a LEF ``WIDTH`` and
 a ``SPACING``: its ``.3`` is read every way, and it has no ``.4``, ``.5`` or ``.6``.
 ``.4`` reads every tip, as M6.4 does; the LEF's keep-out reads only a line end
 narrower than its ``EOLKEEPOUT`` width (39, 57 and 361 nm), which every
@@ -238,7 +337,8 @@ M12 and M13's, and BRDL is RDL's. Values in nm:
      - none
      - none
 
-None has a ``MINSIZE``, so none has a ``.2``. BRDL has no ``RECTONLY``, and its
+None has a LEF ``MINSIZE``, so none has a ``.2``; ``techfile`` checks their areas.
+BRDL has no ``RECTONLY``, and its
 ``.3`` is read every way.
 
 A via is read as V6 to V13 are: its template's cut (``.1``, ``.2``), the cut layer's
@@ -348,10 +448,17 @@ Every rule in every deck also has a generated pattern, written by ``gen/gt2n`` u
 draws the shape exactly at the runset's limit, then one 0.5 nm DBU past it, inside
 whatever else its deck reads: a VG in its gate and M0, a V0 flush with both wires.
 The generator reads its limits from ``icv_runset/Include/gt2.*.drc.rs``, and above M6
-from ``techlib/gt2_tech.lef``, and stops if a deck disagrees, including a deck GT2N
+from ``techlib/gt2_tech.lef``, with well and area limits from
+``techlib/gt2_techfile.tf``, and stops if a deck disagrees, including a deck GT2N
 shares with GT3. The test names the count each
 pattern reports, and any other rule the drawing must also break, such as the bend in
 a notch.
+
+Technology-file patterns cover both width directions, spacing across x, y and
+corners, notches, exact minimum areas and one-DBU-short shapes. Area cases also
+exercise merged pieces, separate islands, holes, negative coordinates and the
+7 µm and 20 µm tile boundaries. Suite tests check that these rules run only on
+the layers belonging to that suite.
 
 That standard-cell fixture contains no BV0–BRDL geometry. Separate synthetic tests
 exercise two SDCONs joined only through the entire backside stack. Removing each

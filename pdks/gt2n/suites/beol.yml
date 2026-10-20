@@ -4,6 +4,10 @@
 
 # The routing stack above M0: M1 to M6 from the runset, V6 to RDL from the tech LEF.
 include:
+  - deck: techfile
+    rules: [M10.area.TF, M11.area.TF, M12.area.TF, M13.area.TF, RDL.area.TF]
+  - deck: offgrid
+    rules: [BEOL.offgrid.LEF]
   - deck: m1
   - deck: v1
   - deck: m2

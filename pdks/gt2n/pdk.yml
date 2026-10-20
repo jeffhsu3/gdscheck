@@ -14,7 +14,8 @@
 #
 # The backside stack, BV0 to BRDL, joins the buried power rail from below.  The runset
 # connects it and checks none of it; this PDK checks it from the LEF as well, the
-# same way.  See docs/source/pdks/gt2n.rst for the source audit.
+# same way. Additional well and area constraints come from techlib/gt2_techfile.tf,
+# with `.TF` ids. See docs/source/pdks/gt2n.rst for the source audit.
 name: GT2N
 version: "0.1"
 extends: gt3
@@ -31,9 +32,15 @@ suites:
     description: Routing stack, M1 to RDL
   - name: backside
     path: suites/backside.yml
-    description: Backside stack, BV0 to BRDL (tech LEF)
+    description: Backside stack, BV0 to BRDL (tech LEF and technology file)
 
 decks:
+  - name: techfile
+    path: decks/techfile.yml
+    description: Additional NWELL and minimum-area constraints (technology file)
+  - name: offgrid
+    path: decks/offgrid.yml
+    description: Manufacturing grid, 0.5 nm (tech LEF)
   - name: bpr
     path: ../gt3/decks/bpr.yml
     description: Buried power rail

@@ -7,12 +7,15 @@
 //! Each family writes good/bad GDS fixtures under `tests/data/gt2n/generated/<deck>/`.
 //! Expectations live in `tests/gt2n.rs`. Limits come from GT2N's IC Validator runset
 //! (`icv_runset/Include/gt2.*.drc.rs`), and above M6, where the runset stops, from its
-//! technology LEF (`techlib/gt2_tech.lef`); the generator checks the decks against them,
+//! technology LEF (`techlib/gt2_tech.lef`), with additional well and area limits from
+//! `techlib/gt2_techfile.tf`; the generator checks the decks against these sources,
 //! so a value changed in a deck - GT2N's own or one it shares with GT3 - stops it.
 
 mod beol;
 mod feol;
 mod mol;
+mod offgrid;
+mod techfile;
 
 use crate::helpers::{library, poly, rect, write_gz};
 use gds21::{GdsElement, GdsUnits};
@@ -105,6 +108,21 @@ impl Corpus<'_> {
         nm
     }
 
+    /// A minimum area from the technology file, in nm² (deck values are µm²).
+    fn src_area(&self, id: &str, nm2: f64) -> f64 {
+        let rule = self
+            .rules
+            .iter()
+            .find(|r| r.id == id && r.check == "min_area")
+            .unwrap_or_else(|| panic!("{id} has no min_area entry"));
+        assert!(
+            (rule.value * 1e6 - nm2).abs() < 1e-6,
+            "{id}: deck value is {} nm², the technology file says {nm2} nm²",
+            rule.value * 1e6
+        );
+        nm2
+    }
+
     /// As [`Self::src`], for the numeric param `key`.
     fn src_param(&self, id: &str, check: &str, key: &str, nm: f64) -> f64 {
         let found: Vec<_> = self
@@ -162,6 +180,8 @@ pub fn generate(pdk: &PdkConfig) {
         })
         .collect();
     let c = Corpus { pdk, rules };
+    techfile::generate(&c);
+    offgrid::generate(&c);
     feol::generate(&c);
     mol::generate(&c);
     beol::generate(&c);

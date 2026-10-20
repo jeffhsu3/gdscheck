@@ -4,6 +4,10 @@
 
 # The front end and middle of line, through V0: what a standard cell holds.
 include:
+  - deck: techfile
+    rules: [NWELL.width.TF, NWELL.space.TF, NWELL.area.TF, ACT.area.TF, BPR.area.TF]
+  - deck: offgrid
+    rules: [FEOL.offgrid.LEF]
   - deck: bpr
   - deck: vbpr
   - deck: gate

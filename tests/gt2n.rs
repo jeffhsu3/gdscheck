@@ -17,7 +17,8 @@
 //!
 //! Every rule also has a generated pattern (`gen/gt2n`) under
 //! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values, and above M6,
-//! where the runset stops, to the tech LEF's.
+//! where the runset stops, to the tech LEF's, plus the technology file's well and
+//! area constraints.
 
 use gds21::{GdsBoundary, GdsElement, GdsLibrary, GdsPoint, GdsStruct, GdsUnits};
 use gdscheck::run_drc;
@@ -229,6 +230,33 @@ fn the_feol_beol_and_backside_suites_split_main() {
     assert_eq!(main, all);
 }
 
+#[rstest]
+#[case("main", vec!["ACT.area.TF", "BM1.area.TF", "BPR.area.TF", "M10.area.TF", "NWELL.area.TF"])]
+#[case("feol", vec!["ACT.area.TF", "BPR.area.TF", "NWELL.area.TF"])]
+#[case("beol", vec!["M10.area.TF"])]
+#[case("backside", vec!["BM1.area.TF"])]
+fn technology_file_constraints_run_in_each_suite(#[case] suite: &str, #[case] rules: Vec<&str>) {
+    // Independent source layer numbers. The well and metals meet their widths but
+    // lack area; BPR's 3 × 32 nm is the last grid step below 100 nm². The ACT piece
+    // also fails its ICV length, so isolate the new technology-file findings.
+    let lib = library(vec![
+        rect(1, [0, 0, 42, 42]),
+        rect(2, [0, 0, 40, 8]),
+        rect(8, [0, 0, 3, 32]),
+        rect(70, [0, 0, 56, 56]),
+        rect(920, [0, 0, 56, 56]),
+    ]);
+    let violations = gdscheck::run_drc_with(&lib, "gt2n", &[], Some(suite), "TOP", true)
+        .expect("technology-file suite run");
+    let mut got: Vec<_> = violations
+        .iter()
+        .filter(|v| v.rule_id.ends_with(".TF"))
+        .map(|v| v.rule_id.as_str())
+        .collect();
+    got.sort_unstable();
+    assert_eq!(got, rules);
+}
+
 // --- Generated patterns ---
 // Each fixture leads with the shapes exactly at the limit, then the ones a DBU past
 // it; the counts follow the drawings and the runset. Each case runs its whole deck.
@@ -286,6 +314,89 @@ fn pattern(deck: &str, rule: &str, variant: &str, count: usize, ignore: &[&str])
         BTreeMap::from([(rule.to_string(), count)])
     };
     assert_eq!(got, expected, "{path}");
+}
+
+#[rstest]
+#[case("NWELL.width.TF", "width", 0)]
+// The width check marks both facing walls of each of the two narrow wells.
+#[case("NWELL.width.TF", "width", 4)]
+#[case("NWELL.space.TF", "space", 0)]
+#[case("NWELL.space.TF", "space", 3)]
+#[case("NWELL.space.TF", "notch", 0)]
+#[case("NWELL.space.TF", "notch", 2)]
+#[case("RDL.area.TF", "hole", 0)]
+#[case("RDL.area.TF", "hole", 1)]
+#[case("BRDL.area.TF", "hole", 0)]
+#[case("BRDL.area.TF", "hole", 1)]
+fn technology_file_geometry(#[case] rule: &str, #[case] variant: &str, #[case] count: usize) {
+    pattern("techfile", rule, variant, count, &[]);
+}
+
+#[rstest]
+#[case("area", 0)]
+#[case("area", 3)]
+#[case("merged", 0)]
+#[case("separate", 2)]
+fn technology_file_minimum_area(
+    #[values(
+        "NWELL", "ACT", "BPR", "M10", "M11", "M12", "M13", "RDL", "BM1", "BM2", "BM3", "BM4",
+        "BRDL"
+    )]
+    layer: &str,
+    #[case] variant: &str,
+    #[case] count: usize,
+) {
+    pattern("techfile", &format!("{layer}.area.TF"), variant, count, &[]);
+}
+
+/// All 56 drawing layers: negative half-nm coordinates are clean; a 0.25 nm shift
+/// in x alone, y alone or both gives four markers per rectangle. These fixtures use
+/// a 0.25 nm DBU, unlike the usual 0.5 nm GT2N fixtures, so the error is representable.
+#[rstest]
+#[case("FEOL.offgrid.LEF", 0)]
+#[case("FEOL.offgrid.LEF", 228)]
+#[case("BEOL.offgrid.LEF", 0)]
+#[case("BEOL.offgrid.LEF", 324)]
+#[case("BACKSIDE.offgrid.LEF", 0)]
+#[case("BACKSIDE.offgrid.LEF", 120)]
+fn manufacturing_grid_patterns(#[case] rule: &str, #[case] count: usize) {
+    pattern("offgrid", rule, "grid", count, &[]);
+}
+
+/// The original missed M1 is a legal 14 x 28 nm rectangle translated by 0.25 nm.
+/// The same half-grid shift on NWELL and BV0 exercises the other suite boundaries;
+/// a pin annotation is not manufacturing geometry. Only grid findings are counted
+/// here, since the isolated via also lacks its landing metals.
+#[rstest]
+#[case("main", vec!["BACKSIDE.offgrid.LEF", "BEOL.offgrid.LEF", "FEOL.offgrid.LEF"])]
+#[case("feol", vec!["FEOL.offgrid.LEF"])]
+#[case("beol", vec!["BEOL.offgrid.LEF"])]
+#[case("backside", vec!["BACKSIDE.offgrid.LEF"])]
+fn manufacturing_grid_runs_in_each_suite(#[case] suite: &str, #[case] rules: Vec<&str>) {
+    let mut elems = Vec::new();
+    for (layer, datatype) in [(1, 0), (25, 0), (910, 0), (25, 251)] {
+        elems.push(GdsElement::GdsBoundary(GdsBoundary {
+            layer,
+            datatype,
+            xy: [(1, 1), (57, 1), (57, 113), (1, 113), (1, 1)]
+                .map(|(x, y)| GdsPoint::new(x, y))
+                .to_vec(),
+            ..Default::default()
+        }));
+    }
+    let mut lib = library(elems);
+    lib.units = GdsUnits(0.00025, 0.25e-9);
+    let violations = gdscheck::run_drc_with(&lib, "gt2n", &[], Some(suite), "TOP", true)
+        .expect("DRC run failed");
+    let mut got = BTreeMap::new();
+    for v in violations
+        .iter()
+        .filter(|v| v.rule_id.ends_with(".offgrid.LEF"))
+    {
+        *got.entry(v.rule_id.as_str()).or_insert(0usize) += 1;
+    }
+    let expected: BTreeMap<_, _> = rules.into_iter().map(|rule| (rule, 4)).collect();
+    assert_eq!(got, expected);
 }
 
 /// The front end. An exact width a DBU under and a DBU over gives two walls each, a
