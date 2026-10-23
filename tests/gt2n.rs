@@ -9,11 +9,8 @@
 //! cell abutted into rows, which carries one of those layers.  The other nine libraries
 //! - the 31 nm sheets, and the ELVT, ULVT, HVT and LVT flavours - read the same.
 //!
-//! The violations the run reports are the library's own: gt2_6t_mux2_x1 lands a V0
-//! flush on the end of its M1, under V0.M1.1's 4 nm, in every flavour; on the 13 nm
-//! sheets, gt2_6t_decapcc draws two VGs 5 nm from an active, under VG.ACT.1's 6; and on
-//! the 31 nm sheets, VG.ACT.1a finds gt2_6t_decapcc's two VGs 4 nm over an active and
-//! one of gt2_6t_mux2_x1's 1.5 nm over (GT2N issue #22).
+//! The one violation the run reports is the library's own: gt2_6t_mux2_x1 lands a V0
+//! flush on the end of its M1, under V0.M1.1's 4 nm, in every flavour.
 //!
 //! Every rule also has a generated pattern (`gen/gt2n`) under
 //! `tests/data/gt2n/generated/<deck>/`, drawn to the runset's values, and above M6,
@@ -34,7 +31,7 @@ fn the_standard_cell_library_holds_only_its_own_violations() {
         run_drc(LIB, "gt2n", &[], Some("main"), "ALLCELLS", true).expect("DRC run failed");
     let mut ids: Vec<&str> = violations.iter().map(|v| v.rule_id.as_str()).collect();
     ids.sort_unstable();
-    assert_eq!(ids, ["V0.M1.1", "VG.ACT.1", "VG.ACT.1"]);
+    assert_eq!(ids, ["V0.M1.1"]);
 }
 
 // Physical GDS layer numbers from GT2N's gt2_main.drc.rs. Drawing the source numbers
@@ -513,8 +510,6 @@ fn feol(#[case] deck: &str, #[case] rule: &str, #[case] variant: &str, #[case] c
 #[case("vg", "VG.7", "bent", 1)]
 #[case("vg", "VG.M0.1", "outside", 2)]
 #[case("vg", "VG.M0.2", "enc", 2)]
-#[case("vg", "VG.ACT.1", "close", 1)]
-#[case("vg", "VG.ACT.1a", "overlap", 3)]
 #[case("sdcon", "SDCON.1", "narrow", 4)]
 #[case("sdcon", "SDCON.2", "close", 1)]
 #[case("sdcon", "SDCON.3", "bent", 1)]

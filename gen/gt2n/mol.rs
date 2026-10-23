@@ -63,11 +63,10 @@ fn jog_y(layer: (i16, i16), x: f64, y: f64, w: f64, h: f64, d: f64) -> GdsElemen
 }
 
 fn vg(c: &Corpus<'_>) {
-    let (vg, gate, m0, act, gcut, dummy) = (
+    let (vg, gate, m0, gcut, dummy) = (
         c.layer("VG"),
         c.layer("GATE"),
         c.layer("M0"),
-        c.layer("ACT"),
         c.layer("GCUT"),
         c.layer("DUMMY"),
     );
@@ -193,40 +192,6 @@ fn vg(c: &Corpus<'_>) {
         .flat_map(|(l, r)| stack(OFFSET, rows.next(tall), w, w, h, l, r, h))
         .collect();
     c.write("vg", "VG.M0.2.enc", true, elems);
-
-    // An ACT across the gate, `gap` below the contact.
-    let s = c.src("VG.ACT.1", "min_space", 6.0);
-    let mut rows = Rows::new(OFFSET);
-    let mut elems = vec![];
-    for gap in [s, s - DBU] {
-        let y = rows.next(tall);
-        elems.extend(ok(OFFSET, y));
-        elems.push(bx(
-            act,
-            OFFSET - 50.0,
-            y + tall / 2.0 - gap - 20.0,
-            114.0,
-            20.0,
-        ));
-    }
-    c.write("vg", "VG.ACT.1.close", true, elems);
-
-    // The same active touching the contact, a DBU into it, and under all of it: no
-    // space at all, which the spacing alone does not see.
-    let mut rows = Rows::new(OFFSET);
-    let mut elems = vec![];
-    for top in [0.0, DBU, h] {
-        let y = rows.next(tall);
-        elems.extend(ok(OFFSET, y));
-        elems.push(bx(
-            act,
-            OFFSET - 50.0,
-            y + tall / 2.0 + top - 20.0,
-            114.0,
-            20.0,
-        ));
-    }
-    c.write("vg", "VG.ACT.1a.overlap", true, elems);
 }
 
 fn sdcon(c: &Corpus<'_>) {

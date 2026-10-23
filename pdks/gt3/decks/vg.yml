@@ -44,16 +44,3 @@ rules:
     params:
       facing: x
       interacting_only: 1
-  # The space between two shapes; a VG on an active, or touching it, has none, which
-  # upstream's separation check does not see either.  VG.ACT.1a reads it, under the
-  # id GT2N's ICV runset gives the same check (rVG_13).
-  - id: VG.ACT.1
-    check: min_space
-    layers: [VG, ACT]
-    value: 0.006
-    params:
-      facing: y
-  - id: VG.ACT.1a
-    check: forbidden
-    layers: [VgOnAct]
-    value: 0.0

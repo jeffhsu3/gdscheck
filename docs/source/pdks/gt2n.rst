@@ -411,17 +411,14 @@ Tests
 -----
 
 ``tests/gt2n.rs`` runs the full suite over the 13 nm SVT library, vendored under
-``tests/data/gt2n/static/`` (BSD-3-Clause). It reports two issues that are the
-library's own. ``gt2_6t_mux2_x1`` lands a V0 flush with the end of its M1, and on the
-13 nm sheets ``gt2_6t_decapcc`` draws two VGs 5 nm from an active (VG.ACT.1). The other
-13 nm libraries give the same result.
+``tests/data/gt2n/static/`` (BSD-3-Clause). It reports one issue that is the
+library's own: ``gt2_6t_mux2_x1`` lands a V0 flush with the end of its M1. The other
+nine libraries give the same result.
 
-The 31 nm libraries have the V0 finding, and instead of VG.ACT.1, three VG.ACT.1a
-markers each: ``gt2_6t_decapcc``'s two VGs overlap an active by 4 nm, and one of
-``gt2_6t_mux2_x1``'s by 1.5 nm. The runset's VG.ACT.1 measures between outward-facing
-edges and does not see an overlap, so upstream's runset reports neither. Both are
-`GT2N issue #22 <https://github.com/azadnaeemi/GT2N/issues/22>`_; the 31 nm decap has
-no vertical room to move its VGs, so it waits on a decision there.
+There is no VG-to-ACT rule. The runset's VG.ACT.1, a 6 nm vertical space, was removed
+upstream in GT2N 5bc689f and GT3 fff4a84, so a gate contact may sit near or over an
+active: ``gt2_6t_decapcc``'s two VGs 5 nm from an active on the 13 nm sheets, and 4 nm
+over one on the 31 nm sheets, as one of ``gt2_6t_mux2_x1``'s is by 1.5 nm, are clean.
 
 The 13 nm and 31 nm sheets share one placement site, but not one ACT: the 13 nm cells
 draw it at y 35–48 nm and the 31 nm cells at y 26–57 nm. The filler and the backside
